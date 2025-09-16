@@ -17,6 +17,9 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.DATE, 
             defaultValue: Sequelize.NOW 
         }
-    }, { timestamps: false });
+    }, { 
+        tableName: 'cliente',
+        freezeTableName: true,
+        timestamps: false });
     return Cliente;
 };

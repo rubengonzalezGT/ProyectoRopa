@@ -15,6 +15,9 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.BOOLEAN, 
             defaultValue: true 
         }
-    }, { timestamps: false });
+    }, { 
+        tableName: 'producto',
+        freezeTableName: true,
+        timestamps: false });
     return Producto;
 };
