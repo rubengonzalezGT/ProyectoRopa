@@ -12,6 +12,9 @@ module.exports = (sequelize, Sequelize) => {
             allowNull: false, 
             unique: true 
         }
-    }, { timestamps: false });
+    }, { 
+        tableName: 'categoria',
+        freezeTableName: true,
+        timestamps: false });
     return Categoria;
 };

@@ -28,6 +28,9 @@ module.exports = (sequelize, Sequelize) => {
         },
         uuid_sat: Sequelize.STRING,
         pdf_url: Sequelize.STRING
-    }, { timestamps: false });
+    }, { 
+        tableName: 'factura',
+        freezeTableName: true,
+        timestamps: false });
     return Factura;
 };

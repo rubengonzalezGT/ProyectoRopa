@@ -1,6 +1,6 @@
 module.exports = (sequelize, Sequelize) => {
     
-    const Usuario = sequelize.define("usuarios", {
+    const Usuario = sequelize.define("usuario", {
 
         id_usuario: { 
             type: Sequelize.BIGINT, 
@@ -29,6 +29,9 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.DATE, 
             defaultValue: Sequelize.NOW 
         }
-    }, { timestamps: false });
+    }, { 
+        tableName: 'usuario',
+        freezeTableName: true,
+        timestamps: false });
     return Usuario;
 };
