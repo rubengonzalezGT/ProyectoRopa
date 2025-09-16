@@ -12,6 +12,9 @@ module.exports = (sequelize, Sequelize) => {
             allowNull: false, 
             unique: true 
         }
-    }, { timestamps: false });
+    }, { 
+        tableName: 'rol',
+        freezeTableName: true,
+        timestamps: false });
     return Rol;
 };

@@ -10,6 +10,9 @@ module.exports = (sequelize, Sequelize) => {
             defaultValue: Sequelize.NOW 
         },
         motivo: Sequelize.STRING
-    }, { timestamps: false });
+    }, { 
+        tableName: 'venta_devolucion',
+        freezeTableName: true,
+        timestamps: false });
     return VentaDevolucion;
 };

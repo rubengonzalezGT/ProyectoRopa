@@ -16,6 +16,9 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.DECIMAL(12,2), 
             allowNull: false 
         }
-    }, { timestamps: false });
+    }, { 
+        tableName: 'compra_item',
+        freezeTableName: true,
+        timestamps: false });
     return CompraItem;
 };

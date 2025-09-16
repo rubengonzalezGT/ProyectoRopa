@@ -26,6 +26,9 @@ module.exports = (sequelize, Sequelize) => {
         card_brand: Sequelize.STRING,
         card_last4: Sequelize.STRING,
         paid_at: Sequelize.DATE
-    }, { timestamps: false });
+    }, { 
+        tableName: 'pago',
+        freezeTableName: true,
+        timestamps: false });
     return Pago;
 };

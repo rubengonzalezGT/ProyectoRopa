@@ -29,6 +29,9 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.DECIMAL(12,2), 
             allowNull: false 
         }
-    }, { timestamps: false });
+    }, { 
+        tableName: 'factura_item',
+        freezeTableName: true,
+        timestamps: false });
     return FacturaItem;
 };
