@@ -21,6 +21,9 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.DATE, 
             defaultValue: Sequelize.NOW 
         }
-    }, { timestamps: false });
+    }, { 
+        tableName: 'inventario_mov',
+        freezeTableName: true,
+        timestamps: false });
     return InventarioMov;
 };

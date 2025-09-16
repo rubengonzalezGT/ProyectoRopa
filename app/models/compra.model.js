@@ -22,6 +22,9 @@ module.exports = (sequelize, Sequelize) => {
             defaultValue: 0 
         },
         notas: Sequelize.TEXT
-    }, { timestamps: false });
+    }, { 
+        tableName: 'compra',
+        freezeTableName: true,
+        timestamps: false });
     return Compra;
 };
