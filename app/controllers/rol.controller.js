@@ -1,12 +1,17 @@
 const db = require("../models");
 const Rol = db.rol;
-const Op = db.Sequelize.Op;
 
-// Crear un rol
+// Crear rol
 exports.create = async (req, res) => {
   try {
     if (!req.body.nombre_rol) {
       return res.status(400).send({ message: "El campo nombre_rol es obligatorio." });
+    }
+
+    // Verificar duplicados
+    const existe = await Rol.findOne({ where: { nombre_rol: req.body.nombre_rol } });
+    if (existe) {
+      return res.status(409).send({ message: "Ese rol ya existe." });
     }
 
     const rol = await Rol.create({ nombre_rol: req.body.nombre_rol });
@@ -16,7 +21,7 @@ exports.create = async (req, res) => {
   }
 };
 
-// Listar todos los roles
+// Listar roles
 exports.findAll = async (_req, res) => {
   try {
     const roles = await Rol.findAll();
@@ -40,17 +45,17 @@ exports.findOne = async (req, res) => {
 // Actualizar rol
 exports.update = async (req, res) => {
   try {
-    const [affected] = await Rol.update(
+    const [updated] = await Rol.update(
       { nombre_rol: req.body.nombre_rol },
       { where: { id_rol: req.params.id } }
     );
 
-    if (affected !== 1) {
+    if (updated !== 1) {
       return res.status(404).send({ message: "Rol no encontrado o sin cambios." });
     }
 
-    const updated = await Rol.findByPk(req.params.id);
-    res.send(updated);
+    const rol = await Rol.findByPk(req.params.id);
+    res.send(rol);
   } catch (err) {
     res.status(500).send({ message: err.message || "Error al actualizar rol." });
   }
