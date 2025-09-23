@@ -1,6 +1,5 @@
 // app/models/index.js
 
-// 1) Cargar config y Sequelize (igual a tu ejemplo)
 const dbConfig = require("../config/db.config.js");
 const Sequelize = require("sequelize");
 
@@ -19,114 +18,134 @@ const sequelize = new Sequelize(dbConfig.DB, dbConfig.USER, dbConfig.PASSWORD, {
   logging: false
 });
 
-// 2) Objeto contenedor
 const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
-// 3) Cargar TODOS los modelos (ajusta nombres si cambian)
-db.rol                 = require("./rol.model.js")(sequelize, Sequelize);
-db.usuario              = require("./usuario.model.js")(sequelize, Sequelize);
+// MODELOS
+db.rol              = require("./rol.model.js")(sequelize, Sequelize);
+db.usuario          = require("./usuario.model.js")(sequelize, Sequelize);
 
-db.marca                = require("./marca.model.js")(sequelize, Sequelize);
-db.categoria            = require("./categoria.model.js")(sequelize, Sequelize);
-db.producto             = require("./producto.model.js")(sequelize, Sequelize);
-db.productoVariante     = require("./productoVariante.model.js")(sequelize, Sequelize);
+db.marca            = require("./marca.model.js")(sequelize, Sequelize);
+db.categoria        = require("./categoria.model.js")(sequelize, Sequelize);
+db.producto         = require("./producto.model.js")(sequelize, Sequelize);
+db.productoVariante = require("./productoVariante.model.js")(sequelize, Sequelize);
 
-db.cliente              = require("./cliente.model.js")(sequelize, Sequelize);
-db.proveedor           = require("./proveedor.model.js")(sequelize, Sequelize);
+db.cliente          = require("./cliente.model.js")(sequelize, Sequelize);
+db.proveedor        = require("./proveedor.model.js")(sequelize, Sequelize);
 
-db.inventarioMov        = require("./inventarioMov.model.js")(sequelize, Sequelize);
-db.inventarioStock      = require("./inventarioStock.model.js")(sequelize, Sequelize);
+db.inventarioMov    = require("./inventarioMov.model.js")(sequelize, Sequelize);
+db.inventarioStock  = require("./inventarioStock.model.js")(sequelize, Sequelize);
 
-db.compra               = require("./compra.model.js")(sequelize, Sequelize);
-db.compraItem           = require("./compraItem.model.js")(sequelize, Sequelize);
+db.compra           = require("./compra.model.js")(sequelize, Sequelize);
+db.compraItem       = require("./compraItem.model.js")(sequelize, Sequelize);
 
-db.venta                = require("./venta.model.js")(sequelize, Sequelize);
-db.ventaItem            = require("./ventaItem.model.js")(sequelize, Sequelize);
+db.venta            = require("./venta.model.js")(sequelize, Sequelize);
+db.ventaItem        = require("./ventaItem.model.js")(sequelize, Sequelize);
 
-db.pago                 = require("./pago.model.js")(sequelize, Sequelize);
+db.pago             = require("./pago.model.js")(sequelize, Sequelize);
 
-db.factura              = require("./factura.model.js")(sequelize, Sequelize);
-db.facturaItem          = require("./facturaItem.model.js")(sequelize, Sequelize);
+db.factura          = require("./factura.model.js")(sequelize, Sequelize);
+db.facturaItem      = require("./facturaItem.model.js")(sequelize, Sequelize);
 
-db.ventaDevolucion     = require("./ventaDevolucion.model.js")(sequelize, Sequelize);
-db.ventaDevolucionItem  = require("./ventaDevolucionItem.model.js")(sequelize, Sequelize);
+db.ventaDevolucion  = require("./ventaDevolucion.model.js")(sequelize, Sequelize);
+db.ventaDevolucionItem = require("./ventaDevolucionItem.model.js")(sequelize, Sequelize);
 
-// 4) ASOCIACIONES (foreign keys)
-// -------- Roles / Usuarios --------
-db.rol.hasMany(db.usuario,               { foreignKey: "id_rol" });
-db.usuario.belongsTo(db.rol,             { foreignKey: "id_rol" });
+// ====================
+// ASOCIACIONES
+// ====================
 
-// -------- Productos / Catálogos --------
-db.marca.hasMany(db.producto,             { foreignKey: "id_marca" });
-db.producto.belongsTo(db.marca,           { foreignKey: "id_marca" });
+// Roles / Usuarios
+db.rol.hasMany(db.usuario, { foreignKey: "id_rol", as: "usuarios" });
+db.usuario.belongsTo(db.rol, { foreignKey: "id_rol", as: "rol" });
 
-db.categoria.hasMany(db.producto,         { foreignKey: "id_categoria" });
-db.producto.belongsTo(db.categoria,       { foreignKey: "id_categoria" });
+// Productos / Catálogos
+db.marca.hasMany(db.producto, { foreignKey: "id_marca", as: "productos" });
+db.producto.belongsTo(db.marca, { foreignKey: "id_marca", as: "marca" });
 
-db.producto.hasMany(db.productoVariante,  { foreignKey: "id_producto", onDelete: "CASCADE" });
-db.productoVariante.belongsTo(db.producto,{ foreignKey: "id_producto" });
+db.categoria.hasMany(db.producto, { foreignKey: "id_categoria", as: "productos" });
+db.producto.belongsTo(db.categoria, { foreignKey: "id_categoria", as: "categoria" });
 
-// -------- Inventario --------
-db.productoVariante.hasOne(db.inventarioStock, { foreignKey: "id_variante", onDelete: "CASCADE" });
-db.inventarioStock.belongsTo(db.productoVariante, { foreignKey: "id_variante" });
+// Producto -> Variantes
+db.producto.hasMany(db.productoVariante, { 
+  foreignKey: "id_producto", 
+  as: "variantes", 
+  onDelete: "CASCADE" 
+});
+db.productoVariante.belongsTo(db.producto, { 
+  foreignKey: "id_producto", 
+  as: "producto" 
+});
 
-db.productoVariante.hasMany(db.inventarioMov, { foreignKey: "id_variante" });
-db.inventarioMov.belongsTo(db.productoVariante, { foreignKey: "id_variante" });
+// Variante -> Stock
+db.productoVariante.hasOne(db.inventarioStock, { 
+  foreignKey: "id_variante", 
+  as: "stock", 
+  onDelete: "CASCADE" 
+});
+db.inventarioStock.belongsTo(db.productoVariante, { 
+  foreignKey: "id_variante", 
+  as: "variante" 
+});
 
-// -------- Compras --------
-db.proveedor.hasMany(db.compra,          { foreignKey: "id_proveedor" });
-db.compra.belongsTo(db.proveedor,        { foreignKey: "id_proveedor" });
+// Variante -> Movimientos
+db.productoVariante.hasMany(db.inventarioMov, { 
+  foreignKey: "id_variante", 
+  as: "movimientos" 
+});
+db.inventarioMov.belongsTo(db.productoVariante, { 
+  foreignKey: "id_variante", 
+  as: "variante" 
+});
 
-db.usuario.hasMany(db.compra,             { foreignKey: "id_usuario" });
-db.compra.belongsTo(db.usuario,           { foreignKey: "id_usuario" });
+// Compras
+db.proveedor.hasMany(db.compra, { foreignKey: "id_proveedor", as: "compras" });
+db.compra.belongsTo(db.proveedor, { foreignKey: "id_proveedor", as: "proveedor" });
 
-db.compra.hasMany(db.compraItem,          { foreignKey: "id_compra", onDelete: "CASCADE" });
-db.compraItem.belongsTo(db.compra,        { foreignKey: "id_compra" });
+db.usuario.hasMany(db.compra, { foreignKey: "id_usuario", as: "compras" });
+db.compra.belongsTo(db.usuario, { foreignKey: "id_usuario", as: "usuario" });
 
-db.productoVariante.hasMany(db.compraItem,{ foreignKey: "id_variante" });
-db.compraItem.belongsTo(db.productoVariante, { foreignKey: "id_variante" });
+db.compra.hasMany(db.compraItem, { foreignKey: "id_compra", as: "items", onDelete: "CASCADE" });
+db.compraItem.belongsTo(db.compra, { foreignKey: "id_compra", as: "compra" });
 
-// -------- Ventas --------
-db.cliente.hasMany(db.venta,              { foreignKey: "id_cliente" });
-db.venta.belongsTo(db.cliente,            { foreignKey: "id_cliente" });
+db.productoVariante.hasMany(db.compraItem, { foreignKey: "id_variante", as: "itemsCompra" });
+db.compraItem.belongsTo(db.productoVariante, { foreignKey: "id_variante", as: "variante" });
 
-db.usuario.hasMany(db.venta,              { foreignKey: "id_usuario" });
-db.venta.belongsTo(db.usuario,            { foreignKey: "id_usuario" });
+// Ventas
+db.cliente.hasMany(db.venta, { foreignKey: "id_cliente", as: "ventas" });
+db.venta.belongsTo(db.cliente, { foreignKey: "id_cliente", as: "cliente" });
 
-db.venta.hasMany(db.ventaItem,            { foreignKey: "id_venta", onDelete: "CASCADE" });
-db.ventaItem.belongsTo(db.venta,          { foreignKey: "id_venta" });
+db.usuario.hasMany(db.venta, { foreignKey: "id_usuario", as: "ventas" });
+db.venta.belongsTo(db.usuario, { foreignKey: "id_usuario", as: "usuario" });
 
-db.productoVariante.hasMany(db.ventaItem, { foreignKey: "id_variante" });
-db.ventaItem.belongsTo(db.productoVariante, { foreignKey: "id_variante" });
+db.venta.hasMany(db.ventaItem, { foreignKey: "id_venta", as: "items", onDelete: "CASCADE" });
+db.ventaItem.belongsTo(db.venta, { foreignKey: "id_venta", as: "venta" });
 
-// -------- Pagos --------
-db.venta.hasMany(db.pago,                 { foreignKey: "id_venta", onDelete: "CASCADE" });
-db.pago.belongsTo(db.venta,               { foreignKey: "id_venta" });
+db.productoVariante.hasMany(db.ventaItem, { foreignKey: "id_variante", as: "itemsVenta" });
+db.ventaItem.belongsTo(db.productoVariante, { foreignKey: "id_variante", as: "variante" });
 
-// -------- Facturación --------
-// Nota: factura tiene UNIQUE(id_venta) en SQL; Sequelize no fuerza unique aquí,
-// pero respetará el FK y podrás definir unique en el model si lo deseas.
-db.venta.hasOne(db.factura,               { foreignKey: "id_venta", onDelete: "SET NULL" });
-db.factura.belongsTo(db.venta,            { foreignKey: "id_venta" });
+// Pagos
+db.venta.hasMany(db.pago, { foreignKey: "id_venta", as: "pagos", onDelete: "CASCADE" });
+db.pago.belongsTo(db.venta, { foreignKey: "id_venta", as: "venta" });
 
-db.factura.hasMany(db.facturaItem,        { foreignKey: "id_factura", onDelete: "CASCADE" });
-db.facturaItem.belongsTo(db.factura,      { foreignKey: "id_factura" });
+// Facturación
+db.venta.hasOne(db.factura, { foreignKey: "id_venta", as: "factura", onDelete: "SET NULL" });
+db.factura.belongsTo(db.venta, { foreignKey: "id_venta", as: "venta" });
 
-// -------- Devoluciones --------
-db.venta.hasMany(db.ventaDevolucion,     { foreignKey: "id_venta" });
-db.ventaDevolucion.belongsTo(db.venta,   { foreignKey: "id_venta" });
+db.factura.hasMany(db.facturaItem, { foreignKey: "id_factura", as: "items", onDelete: "CASCADE" });
+db.facturaItem.belongsTo(db.factura, { foreignKey: "id_factura", as: "factura" });
 
-db.usuario.hasMany(db.ventaDevolucion,   { foreignKey: "id_usuario" });
-db.ventaDevolucion.belongsTo(db.usuario, { foreignKey: "id_usuario" });
+// Devoluciones
+db.venta.hasMany(db.ventaDevolucion, { foreignKey: "id_venta", as: "devoluciones" });
+db.ventaDevolucion.belongsTo(db.venta, { foreignKey: "id_venta", as: "venta" });
 
-db.ventaDevolucion.hasMany(db.ventaDevolucionItem, { foreignKey: "id_devolucion", onDelete: "CASCADE" });
-db.ventaDevolucionItem.belongsTo(db.ventaDevolucion, { foreignKey: "id_devolucion" });
+db.usuario.hasMany(db.ventaDevolucion, { foreignKey: "id_usuario", as: "devoluciones" });
+db.ventaDevolucion.belongsTo(db.usuario, { foreignKey: "id_usuario", as: "usuario" });
 
-// item de devolución referencia el item original de venta
-db.ventaItem.hasMany(db.ventaDevolucionItem, { foreignKey: "id_item_venta" });
-db.ventaDevolucionItem.belongsTo(db.ventaItem, { foreignKey: "id_item_venta" });
+db.ventaDevolucion.hasMany(db.ventaDevolucionItem, { foreignKey: "id_devolucion", as: "items", onDelete: "CASCADE" });
+db.ventaDevolucionItem.belongsTo(db.ventaDevolucion, { foreignKey: "id_devolucion", as: "devolucion" });
 
-// 5) Exportar
+db.ventaItem.hasMany(db.ventaDevolucionItem, { foreignKey: "id_item_venta", as: "itemsDevolucion" });
+db.ventaDevolucionItem.belongsTo(db.ventaItem, { foreignKey: "id_item_venta", as: "itemVenta" });
+
 module.exports = db;

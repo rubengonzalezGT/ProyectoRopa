@@ -1,17 +1,12 @@
 const db = require("../models");
 const Rol = db.rol;
+const Usuario = db.usuario;
 
-// Crear rol
+// Crear un rol
 exports.create = async (req, res) => {
   try {
     if (!req.body.nombre_rol) {
       return res.status(400).send({ message: "El campo nombre_rol es obligatorio." });
-    }
-
-    // Verificar duplicados
-    const existe = await Rol.findOne({ where: { nombre_rol: req.body.nombre_rol } });
-    if (existe) {
-      return res.status(409).send({ message: "Ese rol ya existe." });
     }
 
     const rol = await Rol.create({ nombre_rol: req.body.nombre_rol });
@@ -21,10 +16,12 @@ exports.create = async (req, res) => {
   }
 };
 
-// Listar roles
+// Listar todos los roles
 exports.findAll = async (_req, res) => {
   try {
-    const roles = await Rol.findAll();
+    const roles = await Rol.findAll({
+      include: [{ model: Usuario, as: "usuarios" }] // 👈 alias definido en index
+    });
     res.send(roles);
   } catch (err) {
     res.status(500).send({ message: err.message || "Error al obtener roles." });
@@ -34,7 +31,10 @@ exports.findAll = async (_req, res) => {
 // Buscar rol por ID
 exports.findOne = async (req, res) => {
   try {
-    const rol = await Rol.findByPk(req.params.id);
+    const rol = await Rol.findByPk(req.params.id, {
+      include: [{ model: Usuario, as: "usuarios" }]
+    });
+
     if (!rol) return res.status(404).send({ message: "Rol no encontrado." });
     res.send(rol);
   } catch (err) {
@@ -45,17 +45,17 @@ exports.findOne = async (req, res) => {
 // Actualizar rol
 exports.update = async (req, res) => {
   try {
-    const [updated] = await Rol.update(
+    const [affected] = await Rol.update(
       { nombre_rol: req.body.nombre_rol },
       { where: { id_rol: req.params.id } }
     );
 
-    if (updated !== 1) {
+    if (affected !== 1) {
       return res.status(404).send({ message: "Rol no encontrado o sin cambios." });
     }
 
-    const rol = await Rol.findByPk(req.params.id);
-    res.send(rol);
+    const updated = await Rol.findByPk(req.params.id);
+    res.send(updated);
   } catch (err) {
     res.status(500).send({ message: err.message || "Error al actualizar rol." });
   }
