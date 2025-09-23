@@ -19,12 +19,45 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Conexión a la base de datos con Sequelize
 const db = require("./app/models");
+const bcrypt = require("bcryptjs"); // 👈 necesario para encriptar la clave
 
 // Sincronizar la BD (no borra datos)
-
 db.sequelize.sync()
-  .then(() => {
+  .then(async () => {
     console.log("Base de datos sincronizada correctamente.");
+    
+/*db.sequelize.sync({ force: true }).then(async () => {
+  console.log("🔥 Todas las tablas fueron eliminadas y recreadas.");
+  */
+    // 🚀 Datos por defecto
+    try {
+      const Rol = db.rol;
+      const Usuario = db.usuario;
+
+      // Verificar si ya existe un rol admin
+      let rolAdmin = await Rol.findOne({ where: { nombre_rol: "admin" } });
+      if (!rolAdmin) {
+        rolAdmin = await Rol.create({ nombre_rol: "admin" });
+        console.log("✅ Rol admin creado");
+      }
+
+      // Verificar si ya existe un usuario admin
+      let usuarioAdmin = await Usuario.findOne({ where: { email: "admin@tienda.com" } });
+      if (!usuarioAdmin) {
+        const hash = await bcrypt.hash("admin123", 10);
+        await Usuario.create({
+          nombre: "Administrador",
+          email: "admin@tienda.com",
+          password_hash: hash,
+          direccion: "Oficina central",
+          id_rol: rolAdmin.id_rol,
+          estado: true
+        });
+        console.log("✅ Usuario admin creado (email: admin@tienda.com | pass: admin123)");
+      }
+    } catch (err) {
+      console.error("❌ Error al crear datos iniciales:", err.message);
+    }
   })
   .catch((err) => {
     console.error("Error al sincronizar la BD:", err.message);
@@ -50,6 +83,10 @@ require("./app/routes/venta.routes")(app);
 */
 require("./app/routes/usuario.routes")(app);
 require("./app/routes/rol.routes")(app); 
+require("./app/routes/marca.routes")(app);
+require("./app/routes/categoria.routes")(app);
+require("./app/routes/producto.routes")(app);
+require("./app/routes/productoVariante.routes")(app);
 
 // Agrega aquí más rutas según los controladores que vayas creando
 
