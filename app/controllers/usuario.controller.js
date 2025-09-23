@@ -5,7 +5,7 @@ const Op = db.Sequelize.Op;
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const authConfig = require("../config/auth.config.js"); // 👈 usamos la config centralizada
+const authConfig = require("../config/auth.config.js"); // Config centralizada
 
 // Crear usuario con rol
 exports.register = async (req, res) => {
@@ -30,7 +30,7 @@ exports.register = async (req, res) => {
       email,
       password_hash: hash,
       direccion,
-      id_rol, // 🔑 importante
+      id_rol, 
       estado: true
     });
 
@@ -45,7 +45,6 @@ exports.register = async (req, res) => {
 };
 
 // Login con JWT
-// Login con JWT
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -53,22 +52,20 @@ exports.login = async (req, res) => {
       return res.status(400).send({ message: "Email y password son requeridos." });
     }
 
-    const user = await Usuario.findOne({ where: { email }, include: [Rol] });
+    const user = await Usuario.findOne({
+      where: { email },
+      include: [{ model: Rol, as: "rol" }] // 👈 alias obligatorio
+    });
+
     if (!user) return res.status(401).send({ message: "Credenciales inválidas." });
 
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(401).send({ message: "Credenciales inválidas." });
 
-    // Verificamos formato de expiración
-    let expiresIn = authConfig.jwtExpiration;
-    if (typeof expiresIn !== "string" && typeof expiresIn !== "number") {
-      expiresIn = "1d"; // fallback por si está mal definido
-    }
-
     const token = jwt.sign(
       { id: user.id_usuario, email: user.email, rol: user.rol?.nombre_rol },
       authConfig.secret,
-      { expiresIn }
+      { expiresIn: authConfig.jwtExpiration }
     );
 
     res.send({
@@ -83,13 +80,12 @@ exports.login = async (req, res) => {
   }
 };
 
-
 // Listar usuarios (solo admin)
 exports.findAll = async (_req, res) => {
   try {
     const users = await Usuario.findAll({
       attributes: ["id_usuario", "nombre", "email", "direccion", "estado", "id_rol"],
-      include: [Rol]
+      include: [{ model: Rol, as: "rol" }] // 👈 alias obligatorio
     });
     res.send(users);
   } catch (err) {
@@ -102,7 +98,7 @@ exports.profile = async (req, res) => {
   try {
     const user = await Usuario.findByPk(req.userId, {
       attributes: ["id_usuario", "nombre", "email", "direccion", "estado"],
-      include: [Rol]
+      include: [{ model: Rol, as: "rol" }] // 👈 alias obligatorio
     });
     if (!user) return res.status(404).send({ message: "Usuario no encontrado." });
     res.send(user);
