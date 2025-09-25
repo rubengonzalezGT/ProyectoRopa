@@ -89,6 +89,9 @@ require("./app/routes/producto.routes")(app);
 require("./app/routes/productoVariante.routes")(app);
 require("./app/routes/inventarioMov.routes")(app);
 require("./app/routes/inventarioStock.routes")(app);
+require("./app/routes/compra.routes")(app);
+require("./app/routes/compraItem.routes")(app);
+require("./app/routes/proveedor.routes")(app);
 // Agrega aquí más rutas según los controladores que vayas creando
 
 // Configuración del puerto y arranque del servidor
