@@ -148,4 +148,6 @@ db.ventaDevolucionItem.belongsTo(db.ventaDevolucion, { foreignKey: "id_devolucio
 db.ventaItem.hasMany(db.ventaDevolucionItem, { foreignKey: "id_item_venta", as: "itemsDevolucion" });
 db.ventaDevolucionItem.belongsTo(db.ventaItem, { foreignKey: "id_item_venta", as: "itemVenta" });
 
+
+
 module.exports = db;
