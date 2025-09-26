@@ -1,3 +1,6 @@
+// Cargar variables de entorno desde .env
+require("dotenv").config();
+
 // Importamos los módulos necesarios
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -97,6 +100,18 @@ require("./app/routes/ventaItem.routes")(app);
 require("./app/routes/cliente.routes")(app);
 require("./app/routes/ventaDevolucion.routes")(app);
 require("./app/routes/factura.routes")(app);
+require("./app/routes/pago.routes")(app);
+
+// ✅ Endpoints para redirección de PayPal
+app.get("/success", (req, res) => {
+  const { token } = req.query; // PayPal manda el orderID como token
+  res.send(`<h1>✅ Pago aprobado</h1><p>Order ID: ${token}</p>`);
+});
+
+app.get("/cancel", (req, res) => {
+  res.send("<h1>❌ Pago cancelado</h1><p>El usuario canceló el proceso en PayPal.</p>");
+});
+
 // Agrega aquí más rutas según los controladores que vayas creando
 
 // Configuración del puerto y arranque del servidor
