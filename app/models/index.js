@@ -145,8 +145,9 @@ db.ventaDevolucion.belongsTo(db.usuario, { foreignKey: "id_usuario", as: "usuari
 db.ventaDevolucion.hasMany(db.ventaDevolucionItem, { foreignKey: "id_devolucion", as: "items", onDelete: "CASCADE" });
 db.ventaDevolucionItem.belongsTo(db.ventaDevolucion, { foreignKey: "id_devolucion", as: "devolucion" });
 
-db.ventaItem.hasMany(db.ventaDevolucionItem, { foreignKey: "id_item_venta", as: "itemsDevolucion" });
-db.ventaDevolucionItem.belongsTo(db.ventaItem, { foreignKey: "id_item_venta", as: "itemVenta" });
+// ✅ Ahora cada item de devolución apunta directo a la variante
+db.ventaDevolucionItem.belongsTo(db.productoVariante, { foreignKey: "id_variante", as: "variante" });
+db.productoVariante.hasMany(db.ventaDevolucionItem, { foreignKey: "id_variante", as: "itemsDevolucion" });
 
 
 

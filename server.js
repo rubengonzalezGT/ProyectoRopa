@@ -95,6 +95,7 @@ require("./app/routes/proveedor.routes")(app);
 require("./app/routes/venta.routes")(app);
 require("./app/routes/ventaItem.routes")(app);
 require("./app/routes/cliente.routes")(app);
+require("./app/routes/ventaDevolucion.routes")(app);
 // Agrega aquí más rutas según los controladores que vayas creando
 
 // Configuración del puerto y arranque del servidor
