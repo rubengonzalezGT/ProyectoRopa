@@ -42,7 +42,16 @@ exports.findAll = async (_req, res) => {
         { model: Stock, as: "stock" }
       ]
     });
-    res.send(variantes);
+
+    const resultado = variantes.map(v => {
+      const json = v.toJSON();
+      json.stock = json.stock
+        ? { cantidad: json.stock.stock, updated_at: json.stock.updated_at }
+        : { cantidad: 0, updated_at: null };
+      return json;
+    });
+
+    res.send(resultado);
   } catch (err) {
     res.status(500).send({ message: err.message || "Error al obtener variantes." });
   }
@@ -63,7 +72,12 @@ exports.findOne = async (req, res) => {
       return res.status(404).send({ message: "Variante no encontrada." });
     }
 
-    res.send(variante);
+    const json = variante.toJSON();
+    json.stock = json.stock
+      ? { cantidad: json.stock.stock, updated_at: json.stock.updated_at }
+      : { cantidad: 0, updated_at: null };
+
+    res.send(json);
   } catch (err) {
     res.status(500).send({ message: err.message || "Error al obtener variante." });
   }
@@ -87,7 +101,13 @@ exports.update = async (req, res) => {
         { model: Stock, as: "stock" }
       ]
     });
-    res.send(varianteActualizada);
+
+    const json = varianteActualizada.toJSON();
+    json.stock = json.stock
+      ? { cantidad: json.stock.stock, updated_at: json.stock.updated_at }
+      : { cantidad: 0, updated_at: null };
+
+    res.send(json);
   } catch (err) {
     res.status(500).send({ message: err.message || "Error al actualizar variante." });
   }

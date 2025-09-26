@@ -2,11 +2,11 @@
 // Controller de Cliente para tienda de ropa (PostgreSQL + Sequelize)
 
 const db = require("../models");
-const Cliente = db.clientes;
-const Venta = db.ventas;
-const VentaItem = db.ventaItems;
-const ProductoVariante = db.productoVariantes;
-const Producto = db.productos;
+const Cliente = db.cliente;
+const Venta = db.venta;
+const VentaItem = db.ventaItem;
+const ProductoVariante = db.productoVariante;
+const Producto = db.producto;
 
 const Op = db.Sequelize.Op;
 
@@ -186,16 +186,23 @@ exports.findVentasByCliente = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const ventas = await Venta.findAll({
+    const ventas = await db.venta.findAll({
       where: { id_cliente: id },
       order: [["fecha_venta", "DESC"]],
       include: [
         {
-          model: VentaItem,
+          model: db.ventaItem,
+          as: "items", // 👈 IMPORTANTE, coincide con el alias del index.js
           include: [
             {
-              model: ProductoVariante,
-              include: [Producto]
+              model: db.productoVariante,
+              as: "variante", // 👈 alias correcto
+              include: [
+                {
+                  model: db.producto,
+                  as: "producto" // 👈 alias correcto
+                }
+              ]
             }
           ]
         }
@@ -204,6 +211,9 @@ exports.findVentasByCliente = async (req, res) => {
 
     res.send(ventas);
   } catch (err) {
-    res.status(500).send({ message: err.message || "Error al obtener ventas del cliente." });
+    res.status(500).send({
+      message: err.message || "Error al obtener ventas del cliente."
+    });
   }
 };
+
