@@ -5,7 +5,7 @@ module.exports = (sequelize, Sequelize) => {
             autoIncrement: true, 
             primaryKey: true },
         metodo: { 
-            type: Sequelize.ENUM('CASH','CARD'), 
+            type: Sequelize.ENUM('CASH','CARD', 'PAYPAL'), 
             allowNull: false 
         },
         monto: { 
