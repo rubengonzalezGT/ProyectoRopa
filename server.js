@@ -22,7 +22,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Conexión a la base de datos con Sequelize
 const db = require("./app/models");
-const bcrypt = require("bcryptjs"); // 👈 necesario para encriptar la clave
+const bcrypt = require("bcryptjs"); 
 
 // Sincronizar la BD (no borra datos)
 db.sequelize.sync()
@@ -30,9 +30,9 @@ db.sequelize.sync()
     console.log("Base de datos sincronizada correctamente.");
     
 /*db.sequelize.sync({ force: true }).then(async () => {
-  console.log("🔥 Todas las tablas fueron eliminadas y recreadas.");
+  console.log(" Todas las tablas fueron eliminadas y recreadas.");
   */
-    // 🚀 Datos por defecto
+    //  Datos por defecto
     try {
       const Rol = db.rol;
       const Usuario = db.usuario;
@@ -41,7 +41,7 @@ db.sequelize.sync()
       let rolAdmin = await Rol.findOne({ where: { nombre_rol: "admin" } });
       if (!rolAdmin) {
         rolAdmin = await Rol.create({ nombre_rol: "admin" });
-        console.log("✅ Rol admin creado");
+        console.log(" Rol admin creado");
       }
 
       // Verificar si ya existe un usuario admin
@@ -56,10 +56,10 @@ db.sequelize.sync()
           id_rol: rolAdmin.id_rol,
           estado: true
         });
-        console.log("✅ Usuario admin creado (email: admin@tienda.com | pass: admin123)");
+        console.log(" Usuario admin creado (email: admin@tienda.com | pass: admin123)");
       }
     } catch (err) {
-      console.error("❌ Error al crear datos iniciales:", err.message);
+      console.error(" Error al crear datos iniciales:", err.message);
     }
   })
   .catch((err) => {
@@ -102,14 +102,14 @@ require("./app/routes/ventaDevolucion.routes")(app);
 require("./app/routes/factura.routes")(app);
 require("./app/routes/pago.routes")(app);
 
-// ✅ Endpoints para redirección de PayPal
+//  Endpoints para redirección de PayPal
 app.get("/success", (req, res) => {
   const { token } = req.query; // PayPal manda el orderID como token
-  res.send(`<h1>✅ Pago aprobado</h1><p>Order ID: ${token}</p>`);
+  res.send(`<h1> Pago aprobado</h1><p>Order ID: ${token}</p>`);
 });
 
 app.get("/cancel", (req, res) => {
-  res.send("<h1>❌ Pago cancelado</h1><p>El usuario canceló el proceso en PayPal.</p>");
+  res.send("<h1> Pago cancelado</h1><p>El usuario canceló el proceso en PayPal.</p>");
 });
 
 // Agrega aquí más rutas según los controladores que vayas creando

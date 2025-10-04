@@ -1,4 +1,3 @@
-// app/controllers/factura.controller.js
 const db = require("../models");
 const Factura = db.factura;
 const FacturaItem = db.facturaItem;
@@ -11,7 +10,7 @@ const Cliente = db.cliente;
 exports.createFromVenta = async (req, res) => {
   const t = await db.sequelize.transaction();
   try {
-    const { id } = req.params; // id_venta
+    const { id } = req.params;
     const venta = await Venta.findByPk(id, {
       include: [
         { model: Cliente, as: "cliente" },
@@ -34,7 +33,7 @@ exports.createFromVenta = async (req, res) => {
     // Crear factura
     const factura = await Factura.create({
       id_venta: venta.id_venta,
-      serie: "A", // o manejar dinámico
+      serie: "A", 
       numero: `F-${venta.id_venta.toString().padStart(5, "0")}`,
       nit_receptor: venta.cliente?.nit || "CF",
       nombre_receptor: venta.cliente?.nombre || "Consumidor Final",

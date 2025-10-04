@@ -5,7 +5,7 @@ module.exports = (sequelize, Sequelize) => {
       autoIncrement: true, 
       primaryKey: true 
     },
-    id_variante: {   // 👈 FK a producto_variante
+    id_variante: {  
       type: Sequelize.BIGINT,
       allowNull: false
     },

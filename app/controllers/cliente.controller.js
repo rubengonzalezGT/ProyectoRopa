@@ -1,6 +1,3 @@
-// app/controllers/cliente.controller.js
-// Controller de Cliente para tienda de ropa (PostgreSQL + Sequelize)
-
 const db = require("../models");
 const Cliente = db.cliente;
 const Venta = db.venta;
@@ -24,10 +21,7 @@ const getPagingData = (data, page, limit) => {
   return { totalItems, items: rows, totalPages, currentPage };
 };
 
-/**
- * Crear cliente (evitando duplicado por NIT o email)
- * body: { nombre, nit?, email?, telefono?, direccion? }
- */
+/*Crear cliente (con chequeo básico de duplicados por NIT o Email)*/
 exports.create = async (req, res) => {
   try {
     const { nombre, nit, email, telefono, direccion } = req.body;
@@ -110,10 +104,7 @@ exports.findOne = async (req, res) => {
   }
 };
 
-/**
- * Actualizar cliente por ID (mantiene unicidad NIT/Email si cambian)
- * body: { nombre?, nit?, email?, telefono?, direccion? }
- */
+/*Actualizar cliente por ID (mantiene unicidad NIT/Email si cambian)*/
 exports.update = async (req, res) => {
   try {
     const { id } = req.params;
@@ -152,7 +143,7 @@ exports.update = async (req, res) => {
   }
 };
 
-/** Eliminar cliente por ID */
+/* Eliminar cliente por ID */
 exports.delete = async (req, res) => {
   try {
     const { id } = req.params;
@@ -177,11 +168,7 @@ exports.deleteAll = async (_req, res) => {
   }
 };
 
-/**
- * Historial de ventas del cliente (útil en tienda de ropa)
- * GET /api/clientes/:id/ventas
- * Incluye items y producto/variante para ver tallas/colores.
- */
+/*Historial de ventas del cliente (útil en tienda de ropa)*/
 exports.findVentasByCliente = async (req, res) => {
   try {
     const { id } = req.params;
@@ -192,15 +179,15 @@ exports.findVentasByCliente = async (req, res) => {
       include: [
         {
           model: db.ventaItem,
-          as: "items", // 👈 IMPORTANTE, coincide con el alias del index.js
+          as: "items", 
           include: [
             {
               model: db.productoVariante,
-              as: "variante", // 👈 alias correcto
+              as: "variante", 
               include: [
                 {
                   model: db.producto,
-                  as: "producto" // 👈 alias correcto
+                  as: "producto" 
                 }
               ]
             }

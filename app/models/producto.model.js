@@ -14,7 +14,7 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.BOOLEAN, 
       defaultValue: true 
     },
-    // 🔑 Foreign keys para Marca y Categoría
+    //  Foreign keys para Marca y Categoría
     id_marca: { 
       type: Sequelize.BIGINT,
       allowNull: false
