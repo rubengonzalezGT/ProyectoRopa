@@ -78,7 +78,7 @@ exports.findOne = async (req, res) => {
   }
 };
 
-/** Eliminar un movimiento (no se recomienda en producción) */
+/* Eliminar un movimiento */
 exports.delete = async (req, res) => {
   try {
     const deleted = await InventarioMov.destroy({ where: { id_mov: req.params.id } });

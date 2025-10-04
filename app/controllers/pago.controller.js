@@ -7,7 +7,7 @@ const paypalClient = require("../config/paypalClient.config.js");
 const checkoutNodeJssdk = require("@paypal/checkout-server-sdk");
 
 /**
- * 🔹 Helper: calcula total pagado y saldo pendiente de una venta
+ *  Helper: calcula total pagado y saldo pendiente de una venta
  */
 async function calcularResumenPagos(id_venta) {
   const pagos = await Pago.findAll({ where: { id_venta } });
@@ -23,7 +23,7 @@ async function calcularResumenPagos(id_venta) {
 
 /* ==================== 🔹 PAGOS MANUALES (CASH / CARD) ==================== */
 
-/** Crear pago manual */
+/* Crear pago manual */
 exports.create = async (req, res) => {
   const t = await db.sequelize.transaction();
   try {
@@ -160,7 +160,7 @@ exports.createPaypalOrder = async (req, res) => {
         {
           reference_id: `VENTA-${id_venta}`,
           amount: {
-            currency_code: "USD", // ⚠️ sandbox usa USD
+            currency_code: "USD", 
             value: venta.total.toString(),
           },
         },
@@ -204,13 +204,13 @@ exports.capturePaypalOrder = async (req, res) => {
     const pago = await Pago.create(
       {
         id_venta,
-        metodo: "PAYPAL", // 👈 diferencia de CARD/CASH
+        metodo: "PAYPAL", 
         monto: amount,
         moneda: currency,
         estado: "PAID",
         proveedor: "PAYPAL",
         txn_id: txnId,
-        auth_code: txnId.substring(0, 8), // dummy
+        auth_code: txnId.substring(0, 8), 
         card_brand: "PAYPAL",
         card_last4: "0000",
         paid_at: new Date(),

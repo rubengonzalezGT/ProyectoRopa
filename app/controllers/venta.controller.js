@@ -1,4 +1,3 @@
-// app/controllers/venta.controller.js
 const db = require("../models");
 const Venta = db.venta;
 const Cliente = db.cliente;
@@ -148,7 +147,6 @@ exports.update = async (req, res) => {
   }
 };
 
-/** Eliminar venta */
 /** Eliminar venta */
 exports.delete = async (req, res) => {
   const t = await db.sequelize.transaction();

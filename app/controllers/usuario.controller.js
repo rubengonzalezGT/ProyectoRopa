@@ -5,7 +5,7 @@ const Op = db.Sequelize.Op;
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const authConfig = require("../config/auth.config.js"); // Config centralizada
+const authConfig = require("../config/auth.config.js"); 
 
 // Crear usuario con rol
 exports.register = async (req, res) => {
@@ -54,7 +54,7 @@ exports.login = async (req, res) => {
 
     const user = await Usuario.findOne({
       where: { email },
-      include: [{ model: Rol, as: "rol" }] // 👈 alias obligatorio
+      include: [{ model: Rol, as: "rol" }] 
     });
 
     if (!user) return res.status(401).send({ message: "Credenciales inválidas." });
@@ -85,7 +85,7 @@ exports.findAll = async (_req, res) => {
   try {
     const users = await Usuario.findAll({
       attributes: ["id_usuario", "nombre", "email", "direccion", "estado", "id_rol"],
-      include: [{ model: Rol, as: "rol" }] // 👈 alias obligatorio
+      include: [{ model: Rol, as: "rol" }] 
     });
     res.send(users);
   } catch (err) {
@@ -98,7 +98,7 @@ exports.profile = async (req, res) => {
   try {
     const user = await Usuario.findByPk(req.userId, {
       attributes: ["id_usuario", "nombre", "email", "direccion", "estado"],
-      include: [{ model: Rol, as: "rol" }] // 👈 alias obligatorio
+      include: [{ model: Rol, as: "rol" }] 
     });
     if (!user) return res.status(404).send({ message: "Usuario no encontrado." });
     res.send(user);

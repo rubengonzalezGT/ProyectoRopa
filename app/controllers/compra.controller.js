@@ -4,7 +4,7 @@ const Compra = db.compra;
 const Proveedor = db.proveedor;
 const Usuario = db.usuario;
 const CompraItem = db.compraItem;
-const Variante = db.productoVariante; // 👈 para incluir variante en items
+const Variante = db.productoVariante; 
 
 // Crear una nueva compra
 exports.create = async (req, res) => {
@@ -32,7 +32,7 @@ exports.create = async (req, res) => {
         { 
           model: CompraItem, 
           as: "items", 
-          include: [{ model: Variante, as: "variante" }] // 👈 aquí
+          include: [{ model: Variante, as: "variante" }]
         }
       ]
     });
@@ -53,7 +53,7 @@ exports.findAll = async (_req, res) => {
         { 
           model: CompraItem, 
           as: "items", 
-          include: [{ model: Variante, as: "variante" }] // 👈 aquí también
+          include: [{ model: Variante, as: "variante" }] 
         }
       ],
       order: [["id_compra", "DESC"]]

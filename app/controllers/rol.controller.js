@@ -20,7 +20,7 @@ exports.create = async (req, res) => {
 exports.findAll = async (_req, res) => {
   try {
     const roles = await Rol.findAll({
-      include: [{ model: Usuario, as: "usuarios" }] // 👈 alias definido en index
+      include: [{ model: Usuario, as: "usuarios" }] 
     });
     res.send(roles);
   } catch (err) {

@@ -1,4 +1,3 @@
-// app/controllers/ventaItem.controller.js
 const db = require("../models");
 const VentaItem = db.ventaItem;
 const Venta = db.venta;
@@ -6,7 +5,7 @@ const Variante = db.productoVariante;
 const Stock = db.inventarioStock;
 const InventarioMov = db.inventarioMov;
 
-/** 🔹 Helper: recalcular totales de la venta */
+/* Helper: recalcular totales de la venta */
 async function recalcularTotales(id_venta) {
   const items = await VentaItem.findAll({ where: { id_venta } });
   const subtotal = items.reduce((sum, i) => sum + parseFloat(i.subtotal), 0);
@@ -19,7 +18,6 @@ async function recalcularTotales(id_venta) {
 }
 
 /** Crear item de venta */
-/** Crear item de venta */
 exports.create = async (req, res) => {
   try {
     const { id_venta, id_variante, cantidad, precio_unit, descuento = 0 } = req.body;
@@ -30,7 +28,7 @@ exports.create = async (req, res) => {
     const variante = await Variante.findByPk(id_variante);
     if (!variante) return res.status(404).send({ message: "Variante no encontrada." });
 
-    // 🔹 Validar stock antes de descontar
+    //  Validar stock antes de descontar
     const stock = await Stock.findByPk(id_variante);
     if (!stock || stock.stock < cantidad) {
       return res.status(400).send({ message: "Stock insuficiente para esta venta." });
@@ -54,7 +52,7 @@ exports.create = async (req, res) => {
 
     await recalcularTotales(id_venta);
 
-    // 🔹 Movimiento inventario
+    //  Movimiento inventario
     await InventarioMov.create({
       id_variante,
       tipo: "OUT",
@@ -65,7 +63,7 @@ exports.create = async (req, res) => {
       ref_id: id_venta
     });
 
-    // 🔹 Descontar stock (ahora sí)
+    //  Descontar stock (ahora sí)
     stock.stock -= cantidad;
     stock.updated_at = new Date();
     await stock.save();

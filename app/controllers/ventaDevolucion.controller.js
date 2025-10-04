@@ -10,7 +10,7 @@ const InventarioMov = db.inventarioMov;
 exports.create = async (req, res) => {
   const t = await db.sequelize.transaction();
   try {
-    const { id_venta, id_usuario, motivo, items } = req.body; // 👈 ahora capturamos id_usuario
+    const { id_venta, id_usuario, motivo, items } = req.body; 
 
     if (!id_venta || !items || items.length === 0) {
       await t.rollback();
@@ -25,7 +25,7 @@ exports.create = async (req, res) => {
 
     // 🔹 Crear devolución con usuario incluido
     const devolucion = await VentaDevolucion.create(
-      { id_venta, id_usuario, motivo },  // 👈 aquí ya se guarda id_usuario
+      { id_venta, id_usuario, motivo }, 
       { transaction: t }
     );
 
@@ -190,7 +190,7 @@ exports.delete = async (req, res) => {
     for (const item of devolucion.items) {
       const stock = await Stock.findByPk(item.id_variante);
       if (stock) {
-        stock.stock -= item.cantidad; // sacamos lo que devolvimos
+        stock.stock -= item.cantidad; 
         stock.updated_at = new Date();
         await stock.save({ transaction: t });
       }

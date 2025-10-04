@@ -1,4 +1,3 @@
-// app/controllers/compraItem.controller.js
 const db = require("../models");
 const CompraItem = db.compraItem;
 const Compra = db.compra;
@@ -8,7 +7,7 @@ const Usuario = db.usuario;
 const InventarioMov = db.inventarioMov;
 const Stock = db.inventarioStock;
 
-/** 🔹 Helper: recalcular totales y devolver la compra con todo */
+/* Helper: recalcular totales y devolver la compra con todo */
 async function getCompraCompleta(id_compra) {
   // recalcular totales
   const items = await CompraItem.findAll({ where: { id_compra } });
