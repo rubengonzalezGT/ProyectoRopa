@@ -30,6 +30,7 @@ db.marca            = require("./marca.model.js")(sequelize, Sequelize);
 db.categoria        = require("./categoria.model.js")(sequelize, Sequelize);
 db.producto         = require("./producto.model.js")(sequelize, Sequelize);
 db.productoVariante = require("./productoVariante.model.js")(sequelize, Sequelize);
+db.productoImagen = require("./productoImagen.model.js")(sequelize, Sequelize);
 
 db.cliente          = require("./cliente.model.js")(sequelize, Sequelize);
 db.proveedor        = require("./proveedor.model.js")(sequelize, Sequelize);
@@ -50,6 +51,8 @@ db.facturaItem      = require("./facturaItem.model.js")(sequelize, Sequelize);
 
 db.ventaDevolucion  = require("./ventaDevolucion.model.js")(sequelize, Sequelize);
 db.ventaDevolucionItem = require("./ventaDevolucionItem.model.js")(sequelize, Sequelize);
+
+
 
 // ====================
 // ASOCIACIONES
@@ -149,6 +152,15 @@ db.ventaDevolucionItem.belongsTo(db.ventaDevolucion, { foreignKey: "id_devolucio
 db.ventaDevolucionItem.belongsTo(db.productoVariante, { foreignKey: "id_variante", as: "variante" });
 db.productoVariante.hasMany(db.ventaDevolucionItem, { foreignKey: "id_variante", as: "itemsDevolucion" });
 
+//Imagenes de Producto
+db.productoVariante.hasMany(db.productoImagen, { 
+  foreignKey: "id_variante", 
+  as: "imagenes" 
+});
+db.productoImagen.belongsTo(db.productoVariante, { 
+  foreignKey: "id_variante", 
+  as: "variante" 
+});
 
 
 module.exports = db;
