@@ -33,7 +33,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Soporte para preflight requests
+app.options(/.*/, cors(corsOptions)); // Soporte para preflight requests
 
 // Middleware para parsear JSON y formularios
 app.use(bodyParser.json());
