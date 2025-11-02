@@ -3,7 +3,7 @@ const Variante = db.productoVariante;
 const Producto = db.producto;
 const Stock = db.inventarioStock;
 
-/** Crear variante */
+/** Crear variante (con retorno completo) */
 exports.create = async (req, res) => {
   try {
     const {
@@ -15,8 +15,8 @@ exports.create = async (req, res) => {
       talla,
       precio_venta,
       precio_costo,
-      descuento = 0,     // 👈 Nuevo campo
-      imagen_url = null, // 👈 Nuevo campo
+      descuento = 0,
+      imagen_url = null,
       activo
     } = req.body;
 
@@ -27,6 +27,7 @@ exports.create = async (req, res) => {
       return res.status(400).send({ message: "Los precios son obligatorios." });
     }
 
+    // 🔹 Crear la nueva variante
     const nueva = await Variante.create({
       id_producto,
       sku,
@@ -36,44 +37,60 @@ exports.create = async (req, res) => {
       talla,
       precio_venta,
       precio_costo,
-      descuento,     // 👈 Guardamos el descuento
-      imagen_url,    // 👈 Guardamos la URL de imagen
+      descuento,
+      imagen_url,
       activo: activo ?? true
     });
 
-    res.status(201).send(nueva);
+    // 🔹 Volver a buscar la variante con sus asociaciones completas
+    const varianteCompleta = await Variante.findByPk(nueva.id_variante, {
+      include: [
+        { model: Producto, as: "producto" },
+        { model: Stock, as: "stock" },
+        { model: db.productoImagen, as: "imagenes" }
+      ]
+    });
+
+    const json = varianteCompleta.toJSON();
+
+    // Normalizar stock
+    json.stock = json.stock
+      ? { cantidad: json.stock.stock, updated_at: json.stock.updated_at }
+      : { cantidad: 0, updated_at: null };
+
+    // Calcular precio final con descuento
+    const precioNum = parseFloat(json.precio_venta);
+    const desc = parseFloat(json.descuento || 0);
+    json.precio_final = +(precioNum * (1 - desc / 100)).toFixed(2);
+
+    res.status(201).send(json);
+
   } catch (err) {
     res.status(500).send({ message: err.message || "Error al crear variante." });
   }
 };
 
-/** Listar todas las variantes (con producto, stock e imágenes) */
+/** Listar todas las variantes */
 exports.findAll = async (_req, res) => {
   try {
     const variantes = await Variante.findAll({
       include: [
         { model: Producto, as: "producto" },
         { model: Stock, as: "stock" },
-        { model: db.productoImagen, as: "imagenes" } // 👈 añadimos imágenes
+        { model: db.productoImagen, as: "imagenes" }
       ]
     });
 
     const resultado = variantes.map(v => {
       const json = v.toJSON();
 
-      // Normalizar stock
       json.stock = json.stock
         ? { cantidad: json.stock.stock, updated_at: json.stock.updated_at }
         : { cantidad: 0, updated_at: null };
 
-      // Calcular precio final si hay descuento
-      if (json.descuento) {
-        const precioNum = parseFloat(json.precio_venta);
-        const descuento = parseFloat(json.descuento);
-        json.precio_final = +(precioNum - (precioNum * (descuento / 100))).toFixed(2);
-      } else {
-        json.precio_final = parseFloat(json.precio_venta);
-      }
+      const precioNum = parseFloat(json.precio_venta);
+      const desc = parseFloat(json.descuento || 0);
+      json.precio_final = +(precioNum * (1 - desc / 100)).toFixed(2);
 
       return json;
     });
@@ -84,8 +101,7 @@ exports.findAll = async (_req, res) => {
   }
 };
 
-
-/** Buscar variante por ID (incluye producto, stock e imágenes) */
+/** Buscar variante por ID */
 exports.findOne = async (req, res) => {
   try {
     const { id } = req.params;
@@ -107,13 +123,9 @@ exports.findOne = async (req, res) => {
       ? { cantidad: json.stock.stock, updated_at: json.stock.updated_at }
       : { cantidad: 0, updated_at: null };
 
-    if (json.descuento) {
-      const precioNum = parseFloat(json.precio_venta);
-      const descuento = parseFloat(json.descuento);
-      json.precio_final = +(precioNum - (precioNum * (descuento / 100))).toFixed(2);
-    } else {
-      json.precio_final = parseFloat(json.precio_venta);
-    }
+    const precioNum = parseFloat(json.precio_venta);
+    const desc = parseFloat(json.descuento || 0);
+    json.precio_final = +(precioNum * (1 - desc / 100)).toFixed(2);
 
     res.send(json);
   } catch (err) {
@@ -121,16 +133,11 @@ exports.findOne = async (req, res) => {
   }
 };
 
-
 /** Actualizar variante */
 exports.update = async (req, res) => {
   try {
     const { id } = req.params;
-
-    // 👇 Permitimos actualizar también descuento e imagen_url
-    const [updated] = await Variante.update(req.body, {
-      where: { id_variante: id }
-    });
+    const [updated] = await Variante.update(req.body, { where: { id_variante: id } });
 
     if (updated !== 1) {
       return res.status(404).send({ message: "Variante no encontrada o sin cambios." });
@@ -139,7 +146,8 @@ exports.update = async (req, res) => {
     const varianteActualizada = await Variante.findByPk(id, {
       include: [
         { model: Producto, as: "producto" },
-        { model: Stock, as: "stock" }
+        { model: Stock, as: "stock" },
+        { model: db.productoImagen, as: "imagenes" }
       ]
     });
 
@@ -148,8 +156,9 @@ exports.update = async (req, res) => {
       ? { cantidad: json.stock.stock, updated_at: json.stock.updated_at }
       : { cantidad: 0, updated_at: null };
 
+    const precioNum = parseFloat(json.precio_venta);
     const desc = parseFloat(json.descuento || 0);
-    json.precio_final = parseFloat(json.precio_venta) * (1 - desc / 100);
+    json.precio_final = +(precioNum * (1 - desc / 100)).toFixed(2);
 
     res.send(json);
   } catch (err) {
@@ -161,9 +170,7 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = await Variante.destroy({
-      where: { id_variante: id }
-    });
+    const deleted = await Variante.destroy({ where: { id_variante: id } });
 
     if (deleted !== 1) {
       return res.status(404).send({ message: "Variante no encontrada." });
