@@ -28,25 +28,29 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.DECIMAL(12,2), 
       allowNull: false 
     },
-
-    // 💸 Campo nuevo: descuento por variante (en porcentaje)
     descuento: { 
       type: Sequelize.DECIMAL(5,2), 
-      defaultValue: 0.00,
-      comment: "Porcentaje de descuento aplicado a esta variante (0-100)"
+      defaultValue: 0 
     },
-
-    // 🖼️ Campo nuevo: URL principal de imagen
-    imagen_url: { 
-      type: Sequelize.TEXT, 
-      allowNull: true,
-      comment: "URL de la imagen principal del producto o variante"
+    imagen_url: {
+      type: Sequelize.STRING,
+      allowNull: true
     },
-
     activo: { 
       type: Sequelize.BOOLEAN, 
       defaultValue: true 
+    },
+
+    // ⚡ Campo virtual que calcula el precio con descuento
+    precio_final: {
+      type: Sequelize.VIRTUAL(Sequelize.DECIMAL(12,2), ['precio_venta', 'descuento']),
+      get() {
+        const precio = parseFloat(this.getDataValue('precio_venta') || 0);
+        const desc = parseFloat(this.getDataValue('descuento') || 0);
+        return +(precio * (1 - desc / 100)).toFixed(2);
+      }
     }
+
   }, { 
     tableName: 'producto_variante',
     freezeTableName: true,
