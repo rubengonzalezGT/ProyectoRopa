@@ -75,3 +75,86 @@ exports.create = async (req, res) => {
     res.status(500).send({ message: err.message || "Error al crear item de venta." });
   }
 };
+
+/** Listar todos los items */
+exports.findAll = async (_req, res) => {
+  try {
+    const items = await VentaItem.findAll({
+      include: [
+        { model: Venta, as: "venta" },
+        { model: Variante, as: "variante" }
+      ]
+    });
+    res.send(items);
+  } catch (err) {
+    res.status(500).send({ message: err.message || "Error al obtener items de venta." });
+  }
+};
+
+/** Buscar item por ID */
+exports.findOne = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const item = await VentaItem.findByPk(id, {
+      include: [
+        { model: Venta, as: "venta" },
+        { model: Variante, as: "variante" }
+      ]
+    });
+    if (!item) return res.status(404).send({ message: "Item no encontrado." });
+    res.send(item);
+  } catch (err) {
+    res.status(500).send({ message: err.message || "Error al obtener item de venta." });
+  }
+};
+
+/** Actualizar item */
+exports.update = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { cantidad, descuento } = req.body;
+
+    const item = await VentaItem.findByPk(id);
+    if (!item) return res.status(404).send({ message: "Item no encontrado." });
+
+    const variante = await Variante.findByPk(item.id_variante);
+    if (!variante) return res.status(404).send({ message: "Variante no encontrada." });
+
+    const precio_unit = parseFloat(variante.precio_final);
+    const subtotal = cantidad * precio_unit;
+    const impuesto = subtotal * 0.12;
+    const total = subtotal - descuento + impuesto;
+
+    Object.assign(item, { cantidad, descuento, subtotal, impuesto, total });
+    await item.save();
+
+    await recalcularTotales(item.id_venta);
+    res.send(item);
+  } catch (err) {
+    res.status(500).send({ message: err.message || "Error al actualizar item de venta." });
+  }
+};
+
+/** Eliminar item */
+exports.delete = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const item = await VentaItem.findByPk(id);
+    if (!item) return res.status(404).send({ message: "Item no encontrado." });
+
+    const stock = await Stock.findByPk(item.id_variante);
+    if (stock) {
+      stock.stock += item.cantidad;
+      stock.updated_at = new Date();
+      await stock.save();
+    }
+
+    await VentaItem.destroy({ where: { id_item: id } });
+    await recalcularTotales(item.id_venta);
+
+    res.send({ message: "Item eliminado correctamente." });
+  } catch (err) {
+    res.status(500).send({ message: err.message || "Error al eliminar item de venta." });
+  }
+};
+
