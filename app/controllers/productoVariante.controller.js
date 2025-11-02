@@ -3,7 +3,7 @@ const Variante = db.productoVariante;
 const Producto = db.producto;
 const Stock = db.inventarioStock;
 
-/** Crear variante (con retorno completo) */
+/** Crear variante */
 exports.create = async (req, res) => {
   try {
     const {
@@ -27,7 +27,6 @@ exports.create = async (req, res) => {
       return res.status(400).send({ message: "Los precios son obligatorios." });
     }
 
-    // 🔹 Crear la nueva variante
     const nueva = await Variante.create({
       id_producto,
       sku,
@@ -42,7 +41,6 @@ exports.create = async (req, res) => {
       activo: activo ?? true
     });
 
-    // 🔹 Volver a buscar la variante con sus asociaciones completas
     const varianteCompleta = await Variante.findByPk(nueva.id_variante, {
       include: [
         { model: Producto, as: "producto" },
@@ -51,20 +49,7 @@ exports.create = async (req, res) => {
       ]
     });
 
-    const json = varianteCompleta.toJSON();
-
-    // Normalizar stock
-    json.stock = json.stock
-      ? { cantidad: json.stock.stock, updated_at: json.stock.updated_at }
-      : { cantidad: 0, updated_at: null };
-
-    // Calcular precio final con descuento
-    const precioNum = parseFloat(json.precio_venta);
-    const desc = parseFloat(json.descuento || 0);
-    json.precio_final = +(precioNum * (1 - desc / 100)).toFixed(2);
-
-    res.status(201).send(json);
-
+    res.status(201).send(varianteCompleta);
   } catch (err) {
     res.status(500).send({ message: err.message || "Error al crear variante." });
   }
@@ -80,22 +65,7 @@ exports.findAll = async (_req, res) => {
         { model: db.productoImagen, as: "imagenes" }
       ]
     });
-
-    const resultado = variantes.map(v => {
-      const json = v.toJSON();
-
-      json.stock = json.stock
-        ? { cantidad: json.stock.stock, updated_at: json.stock.updated_at }
-        : { cantidad: 0, updated_at: null };
-
-      const precioNum = parseFloat(json.precio_venta);
-      const desc = parseFloat(json.descuento || 0);
-      json.precio_final = +(precioNum * (1 - desc / 100)).toFixed(2);
-
-      return json;
-    });
-
-    res.send(resultado);
+    res.send(variantes);
   } catch (err) {
     res.status(500).send({ message: err.message || "Error al obtener variantes." });
   }
@@ -117,17 +87,7 @@ exports.findOne = async (req, res) => {
       return res.status(404).send({ message: "Variante no encontrada." });
     }
 
-    const json = variante.toJSON();
-
-    json.stock = json.stock
-      ? { cantidad: json.stock.stock, updated_at: json.stock.updated_at }
-      : { cantidad: 0, updated_at: null };
-
-    const precioNum = parseFloat(json.precio_venta);
-    const desc = parseFloat(json.descuento || 0);
-    json.precio_final = +(precioNum * (1 - desc / 100)).toFixed(2);
-
-    res.send(json);
+    res.send(variante);
   } catch (err) {
     res.status(500).send({ message: err.message || "Error al obtener variante." });
   }
@@ -151,16 +111,7 @@ exports.update = async (req, res) => {
       ]
     });
 
-    const json = varianteActualizada.toJSON();
-    json.stock = json.stock
-      ? { cantidad: json.stock.stock, updated_at: json.stock.updated_at }
-      : { cantidad: 0, updated_at: null };
-
-    const precioNum = parseFloat(json.precio_venta);
-    const desc = parseFloat(json.descuento || 0);
-    json.precio_final = +(precioNum * (1 - desc / 100)).toFixed(2);
-
-    res.send(json);
+    res.send(varianteActualizada);
   } catch (err) {
     res.status(500).send({ message: err.message || "Error al actualizar variante." });
   }
