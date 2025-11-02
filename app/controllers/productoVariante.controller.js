@@ -16,7 +16,7 @@ exports.create = async (req, res) => {
       precio_venta,
       precio_costo,
       descuento = 0,
-      imagen_url = null,
+      imagen_url,
       activo
     } = req.body;
 
@@ -26,6 +26,12 @@ exports.create = async (req, res) => {
     if (!precio_venta || !precio_costo) {
       return res.status(400).send({ message: "Los precios son obligatorios." });
     }
+
+    // ✅ URL por defecto si no se envía una imagen
+    const urlFinal =
+      imagen_url && imagen_url.trim() !== ""
+        ? imagen_url.trim()
+        : "https://placehold.co/400x400?text=Sin+Imagen";
 
     const nueva = await Variante.create({
       id_producto,
@@ -37,7 +43,7 @@ exports.create = async (req, res) => {
       precio_venta,
       precio_costo,
       descuento,
-      imagen_url,
+      imagen_url: urlFinal,
       activo: activo ?? true
     });
 
@@ -54,6 +60,7 @@ exports.create = async (req, res) => {
     res.status(500).send({ message: err.message || "Error al crear variante." });
   }
 };
+
 
 /** Listar todas las variantes */
 exports.findAll = async (_req, res) => {
