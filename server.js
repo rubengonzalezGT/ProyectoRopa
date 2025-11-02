@@ -8,11 +8,19 @@ const cors = require("cors");
 
 const app = express();
 
-// Configuración de CORS (ajústalo si tu frontend está en otra URL)
-var corsOptions = {
-  origin: "http://localhost:8081"
+// ✅ Configuración de CORS para Render + desarrollo local
+const corsOptions = {
+  origin: [
+    "http://localhost:4200",               // Frontend local (Angular)
+    "https://proyectoropa-ijsq.onrender.com" // Dominio de tu backend en Render
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
 };
+
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Habilita preflight requests para todos los endpoints
 
 // parse requests of content-type - application/json
 app.use(bodyParser.json());
@@ -28,11 +36,7 @@ const bcrypt = require("bcryptjs");
 db.sequelize.sync()
   .then(async () => {
     console.log("Base de datos sincronizada correctamente.");
-    
-/*db.sequelize.sync({ force: true }).then(async () => {
-  console.log(" Todas las tablas fueron eliminadas y recreadas.");
-  */
-    //  Datos por defecto
+
     try {
       const Rol = db.rol;
       const Usuario = db.usuario;
@@ -41,7 +45,7 @@ db.sequelize.sync()
       let rolAdmin = await Rol.findOne({ where: { nombre_rol: "admin" } });
       if (!rolAdmin) {
         rolAdmin = await Rol.create({ nombre_rol: "admin" });
-        console.log(" Rol admin creado");
+        console.log("Rol admin creado");
       }
 
       // Verificar si ya existe un usuario admin
@@ -56,20 +60,15 @@ db.sequelize.sync()
           id_rol: rolAdmin.id_rol,
           estado: true
         });
-        console.log(" Usuario admin creado (email: admin@tienda.com | pass: admin123)");
+        console.log("Usuario admin creado (email: admin@tienda.com | pass: admin123)");
       }
     } catch (err) {
-      console.error(" Error al crear datos iniciales:", err.message);
+      console.error("Error al crear datos iniciales:", err.message);
     }
   })
   .catch((err) => {
     console.error("Error al sincronizar la BD:", err.message);
   });
-
-// Si quieres reiniciar las tablas en desarrollo descomenta esto:
-// db.sequelize.sync({ force: true }).then(() => {
-//   console.log("Todas las tablas fueron eliminadas y recreadas.");
-// });
 
 // Ruta simple para verificar que el servidor responde
 app.get("/", (req, res) => {
@@ -77,13 +76,6 @@ app.get("/", (req, res) => {
 });
 
 // Rutas de la aplicación
-/*
-require("./app/routes/cliente.routes")(app);
-require("./app/routes/factura.routes")(app);
-require("./app/routes/pago.routes")(app);
-require("./app/routes/producto.routes")(app);
-require("./app/routes/venta.routes")(app);
-*/
 require("./app/routes/usuario.routes")(app);
 require("./app/routes/rol.routes")(app); 
 require("./app/routes/marca.routes")(app);
@@ -103,17 +95,15 @@ require("./app/routes/factura.routes")(app);
 require("./app/routes/pago.routes")(app);
 require("./app/routes/productoImagen.routes")(app);
 
-//  Endpoints para redirección de PayPal
+// Endpoints para redirección de PayPal
 app.get("/success", (req, res) => {
   const { token } = req.query; // PayPal manda el orderID como token
-  res.send(`<h1> Pago aprobado</h1><p>Order ID: ${token}</p>`);
+  res.send(`<h1>Pago aprobado</h1><p>Order ID: ${token}</p>`);
 });
 
 app.get("/cancel", (req, res) => {
-  res.send("<h1> Pago cancelado</h1><p>El usuario canceló el proceso en PayPal.</p>");
+  res.send("<h1>Pago cancelado</h1><p>El usuario canceló el proceso en PayPal.</p>");
 });
-
-// Agrega aquí más rutas según los controladores que vayas creando
 
 // Configuración del puerto y arranque del servidor
 const PORT = process.env.PORT || 8081;
