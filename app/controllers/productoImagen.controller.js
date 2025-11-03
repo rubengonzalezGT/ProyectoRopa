@@ -6,29 +6,46 @@ const Variante = db.productoVariante;
 /** Crear imagen */
 exports.create = async (req, res) => {
   try {
-    const { id_variante, url, orden = 1 } = req.body;
+    const { id_variante, url } = req.body;
 
     if (!id_variante || !url) {
-      return res.status(400).send({ message: "Faltan datos obligatorios (id_variante, url)." });
+      return res.status(400).send({
+        message: "Faltan datos obligatorios (id_variante, url)."
+      });
     }
 
-    // Validar que la variante exista
+    // 🔹 Validar que la variante exista
     const variante = await Variante.findByPk(id_variante);
     if (!variante) {
       return res.status(404).send({ message: "Variante no encontrada." });
     }
 
+    // 🔹 Contar cuántas imágenes tiene la variante actualmente
+    const count = await Imagen.count({ where: { id_variante } });
+
+    // 🔹 Crear nueva imagen (orden automático)
     const nueva = await Imagen.create({
       id_variante,
       url,
-      orden
+      orden: count + 1
     });
 
+    // 🔹 Si es la primera imagen, actualizar la imagen principal de la variante
+    if (count === 0) {
+      await Variante.update(
+        { imagen_url: url },
+        { where: { id_variante } }
+      );
+    }
+
     res.status(201).send({
-      message: "Imagen agregada correctamente.",
+      message: count === 0
+        ? "✅ Imagen principal agregada correctamente."
+        : "✅ Imagen agregada correctamente.",
       imagen: nueva
     });
   } catch (err) {
+    console.error("❌ Error al crear imagen:", err);
     res.status(500).send({ message: err.message || "Error al crear imagen." });
   }
 };
@@ -110,4 +127,3 @@ exports.delete = async (req, res) => {
     res.status(500).send({ message: err.message || "Error al eliminar imagen." });
   }
 };
-
