@@ -1,8 +1,9 @@
 const db = require("../models");
 const Stock = db.inventarioStock;
 const Variante = db.productoVariante;
+const Mov = db.inventarioMov;
 
-/** Crear registro de stock (automático o manual) */
+/** Crear o actualizar stock */
 exports.create = async (req, res) => {
   try {
     const { id_variante, stock = 0 } = req.body;
@@ -11,29 +12,41 @@ exports.create = async (req, res) => {
       return res.status(400).send({ message: "El id_variante es obligatorio." });
     }
 
-    // Verificar si ya existe stock para esa variante
-    const existente = await Stock.findByPk(id_variante);
-    if (existente) {
-      // 👇 Si ya existe, solo actualizamos el valor
-      existente.stock = stock;
-      existente.updated_at = new Date();
-      await existente.save();
-      return res.status(200).send({
-        message: "Stock actualizado correctamente (ya existía).",
-        stock: existente
+    // Buscar stock existente
+    let registro = await Stock.findByPk(id_variante);
+
+    let tipoMovimiento = "ADJUST";
+    let diferencia = 0;
+
+    if (registro) {
+      diferencia = stock - registro.stock;
+      if (diferencia > 0) tipoMovimiento = "IN";
+      else if (diferencia < 0) tipoMovimiento = "OUT";
+
+      registro.stock = stock;
+      registro.updated_at = new Date();
+      await registro.save();
+    } else {
+      registro = await Stock.create({ id_variante, stock, updated_at: new Date() });
+      tipoMovimiento = "IN"; // nuevo registro => entrada inicial
+    }
+
+    // Registrar movimiento
+    if (diferencia !== 0) {
+      await Mov.create({
+        id_variante,
+        tipo: tipoMovimiento,
+        cantidad: Math.abs(diferencia),
+        costo_unit: null,
+        motivo: "Ajuste de stock manual",
+        ref_tipo: "STOCK",
+        ref_id: id_variante
       });
     }
 
-    // Crear nuevo registro
-    const nuevo = await Stock.create({
-      id_variante,
-      stock,
-      updated_at: new Date()
-    });
-
-    res.status(201).send({
-      message: "Stock creado correctamente.",
-      stock: nuevo
+    res.status(200).send({
+      message: "Stock actualizado correctamente.",
+      stock: registro
     });
   } catch (err) {
     res.status(500).send({ message: err.message || "Error al crear o actualizar stock." });
@@ -60,9 +73,7 @@ exports.findOne = async (req, res) => {
       include: [{ model: Variante, as: "variante" }]
     });
 
-    if (!stock) {
-      return res.status(404).send({ message: "Stock no encontrado." });
-    }
+    if (!stock) return res.status(404).send({ message: "Stock no encontrado." });
 
     res.send(stock);
   } catch (err) {
@@ -76,33 +87,50 @@ exports.update = async (req, res) => {
     const { id } = req.params;
     const { cantidad } = req.body;
 
-    const stock = await Stock.findByPk(id);
-    if (!stock) {
+    const registro = await Stock.findByPk(id);
+    if (!registro) {
       return res.status(404).send({ message: "Stock no encontrado." });
     }
 
-    stock.stock = cantidad ?? stock.stock;
-    stock.updated_at = new Date();
-    await stock.save();
+    const diferencia = cantidad - registro.stock;
+    let tipoMovimiento = "ADJUST";
+    if (diferencia > 0) tipoMovimiento = "IN";
+    else if (diferencia < 0) tipoMovimiento = "OUT";
+
+    registro.stock = cantidad;
+    registro.updated_at = new Date();
+    await registro.save();
+
+    // Registrar movimiento
+    if (diferencia !== 0) {
+      await Mov.create({
+        id_variante: id,
+        tipo: tipoMovimiento,
+        cantidad: Math.abs(diferencia),
+        costo_unit: null,
+        motivo: "Ajuste manual",
+        ref_tipo: "STOCK",
+        ref_id: id
+      });
+    }
 
     res.send({
-      message: "Stock actualizado correctamente.",
-      stock
+      message: "Stock actualizado y movimiento registrado.",
+      stock: registro
     });
   } catch (err) {
     res.status(500).send({ message: err.message || "Error al actualizar stock." });
   }
 };
 
-/** Eliminar registro de stock */
+/** Eliminar registro */
 exports.delete = async (req, res) => {
   try {
     const { id } = req.params;
     const deleted = await Stock.destroy({ where: { id_variante: id } });
 
-    if (deleted !== 1) {
+    if (deleted !== 1)
       return res.status(404).send({ message: "Stock no encontrado." });
-    }
 
     res.send({ message: "Stock eliminado correctamente." });
   } catch (err) {
