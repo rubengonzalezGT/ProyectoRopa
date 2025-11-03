@@ -4,6 +4,7 @@ const Producto = db.producto;
 const Stock = db.inventarioStock;
 
 /** Crear variante */
+/** Crear variante */
 exports.create = async (req, res) => {
   try {
     const {
@@ -33,6 +34,7 @@ exports.create = async (req, res) => {
         ? imagen_url.trim()
         : "https://placehold.co/400x400?text=Sin+Imagen";
 
+    // 🔹 Crear variante
     const nueva = await Variante.create({
       id_producto,
       sku,
@@ -47,6 +49,17 @@ exports.create = async (req, res) => {
       activo: activo ?? true
     });
 
+    // ✅ Si la variante tiene una imagen, registrar también en producto_imagen (orden 1)
+    if (imagen_url && imagen_url.trim() !== "") {
+      const Imagen = db.productoImagen;
+      await Imagen.create({
+        id_variante: nueva.id_variante,
+        url: imagen_url.trim(),
+        orden: 1
+      });
+    }
+
+    // 🔹 Buscar la variante recién creada con sus relaciones completas
     const varianteCompleta = await Variante.findByPk(nueva.id_variante, {
       include: [
         { model: Producto, as: "producto" },
@@ -60,6 +73,7 @@ exports.create = async (req, res) => {
     res.status(500).send({ message: err.message || "Error al crear variante." });
   }
 };
+
 
 
 /** Listar todas las variantes */
