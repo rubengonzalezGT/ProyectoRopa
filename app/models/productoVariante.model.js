@@ -1,47 +1,54 @@
 module.exports = (sequelize, Sequelize) => {
   const ProductoVariante = sequelize.define("producto_variante", {
-    id_variante: { 
-      type: Sequelize.BIGINT, 
-      autoIncrement: true, 
-      primaryKey: true 
+    id_variante: {
+      type: Sequelize.BIGINT,
+      autoIncrement: true,
+      primaryKey: true
     },
-    sku: { 
-      type: Sequelize.STRING, 
-      allowNull: false, 
-      unique: true 
+
+    // ✅ FK explícita (antes NO estaba definida)
+    id_producto: {
+      type: Sequelize.BIGINT,
+      allowNull: false
     },
-    barcode: { 
-      type: Sequelize.STRING, 
-      allowNull: false 
+
+    sku: {
+      type: Sequelize.STRING,
+      allowNull: false,
+      unique: true
     },
-    modelo: { 
-      type: Sequelize.STRING, 
-      allowNull: false 
+    barcode: {
+      type: Sequelize.STRING,
+      allowNull: false
+    },
+    modelo: {
+      type: Sequelize.STRING,
+      allowNull: false
     },
     color: Sequelize.STRING,
     talla: Sequelize.STRING,
-    precio_venta: { 
-      type: Sequelize.DECIMAL(12,2), 
-      allowNull: false 
+    precio_venta: {
+      type: Sequelize.DECIMAL(12,2),
+      allowNull: false
     },
-    precio_costo: { 
-      type: Sequelize.DECIMAL(12,2), 
-      allowNull: false 
+    precio_costo: {
+      type: Sequelize.DECIMAL(12,2),
+      allowNull: false
     },
-    descuento: { 
-      type: Sequelize.DECIMAL(5,2), 
-      defaultValue: 0 
+    descuento: {
+      type: Sequelize.DECIMAL(5,2),
+      defaultValue: 0
     },
     imagen_url: {
       type: Sequelize.STRING,
       allowNull: true
     },
-    activo: { 
-      type: Sequelize.BOOLEAN, 
-      defaultValue: true 
+    activo: {
+      type: Sequelize.BOOLEAN,
+      defaultValue: true
     },
 
-    // ⚡ Campo virtual que calcula el precio con descuento
+    // ⚡ precio_final virtual
     precio_final: {
       type: Sequelize.VIRTUAL(Sequelize.DECIMAL(12,2), ['precio_venta', 'descuento']),
       get() {
@@ -50,11 +57,10 @@ module.exports = (sequelize, Sequelize) => {
         return +(precio * (1 - desc / 100)).toFixed(2);
       }
     }
-
-  }, { 
+  }, {
     tableName: 'producto_variante',
     freezeTableName: true,
-    timestamps: false 
+    timestamps: false
   });
 
   return ProductoVariante;
