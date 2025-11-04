@@ -4,9 +4,10 @@ const Imagen = db.productoImagen;
 const Variante = db.productoVariante;
 
 /** Crear imagen */
+/** Crear imagen */
 exports.create = async (req, res) => {
   try {
-    const { id_variante, url } = req.body;
+    const { id_variante, url, orden } = req.body;
 
     if (!id_variante || !url) {
       return res.status(400).send({
@@ -20,18 +21,29 @@ exports.create = async (req, res) => {
       return res.status(404).send({ message: "Variante no encontrada." });
     }
 
-    // 🔹 Contar cuántas imágenes tiene la variante actualmente
-    const count = await Imagen.count({ where: { id_variante } });
+    // 🔹 Buscar la última imagen (para saber cuál es el orden más alto)
+    const ultima = await Imagen.findOne({
+      where: { id_variante },
+      order: [["orden", "DESC"]],
+    });
 
-    // 🔹 Crear nueva imagen (orden automático)
+    // ✅ Si el usuario manda un orden manual, se respeta; de lo contrario, se calcula automáticamente
+    const nuevoOrden =
+      orden !== undefined && orden !== null
+        ? parseInt(orden)
+        : ultima
+        ? ultima.orden + 1
+        : 1;
+
+    // 🔹 Crear nueva imagen
     const nueva = await Imagen.create({
       id_variante,
       url,
-      orden: count + 1
+      orden: nuevoOrden,
     });
 
     // 🔹 Si es la primera imagen, actualizar la imagen principal de la variante
-    if (count === 0) {
+    if (!ultima) {
       await Variante.update(
         { imagen_url: url },
         { where: { id_variante } }
@@ -39,16 +51,17 @@ exports.create = async (req, res) => {
     }
 
     res.status(201).send({
-      message: count === 0
+      message: !ultima
         ? "✅ Imagen principal agregada correctamente."
-        : "✅ Imagen agregada correctamente.",
-      imagen: nueva
+        : `✅ Imagen agregada correctamente con orden ${nuevoOrden}.`,
+      imagen: nueva,
     });
   } catch (err) {
     console.error("❌ Error al crear imagen:", err);
     res.status(500).send({ message: err.message || "Error al crear imagen." });
   }
 };
+
 
 /** Listar todas las imágenes (opcionalmente por variante) */
 exports.findAll = async (req, res) => {
