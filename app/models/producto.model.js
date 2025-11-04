@@ -20,8 +20,11 @@ module.exports = (sequelize, Sequelize) => {
       allowNull: false
     },
     genero: {
-      type: DataTypes.STRING,
+      type: Sequelize.STRING,
       allowNull: true,
+      validate: {
+        isIn: [["HOMBRE", "MUJER"]]
+      }
     },
     id_categoria: { 
       type: Sequelize.BIGINT,
