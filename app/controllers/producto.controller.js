@@ -9,18 +9,19 @@ const Op = db.Sequelize.Op;
 /** Crear producto */
 exports.create = async (req, res) => {
   try {
-    const { nombre, descripcion, id_marca, id_categoria } = req.body;
+    const { nombre, descripcion, id_marca, id_categoria, genero } = req.body;
 
     if (!nombre) {
       return res.status(400).send({ message: "El nombre del producto es obligatorio." });
     }
 
-    // Crear producto
+    // Crear producto con género
     const producto = await Producto.create({
       nombre,
       descripcion,
       id_marca,
       id_categoria,
+      genero, // ✅ nuevo campo
       activo: true
     });
 
@@ -41,10 +42,11 @@ exports.create = async (req, res) => {
   }
 };
 
+
 /** Obtener todos los productos */
 exports.findAll = async (req, res) => {
   try {
-    const { q, id_marca, id_categoria } = req.query;
+    const { q, id_marca, id_categoria, genero } = req.query; // ✅ nuevo
 
     const where = {};
     if (q) {
@@ -55,6 +57,7 @@ exports.findAll = async (req, res) => {
     }
     if (id_marca) where.id_marca = id_marca;
     if (id_categoria) where.id_categoria = id_categoria;
+    if (genero) where.genero = genero; // ✅ soporte de filtro
 
     const productos = await Producto.findAll({
       where,
@@ -73,6 +76,7 @@ exports.findAll = async (req, res) => {
     });
   }
 };
+
 
 /** Obtener un producto por ID */
 exports.findOne = async (req, res) => {

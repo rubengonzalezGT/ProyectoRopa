@@ -19,6 +19,10 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.BIGINT,
       allowNull: false
     },
+    genero: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     id_categoria: { 
       type: Sequelize.BIGINT,
       allowNull: false
