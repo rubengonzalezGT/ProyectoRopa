@@ -1,6 +1,6 @@
 // app/routes/cliente.routes.js
 module.exports = app => {
-  const clientes = require("../controllers/cliente.controller.js");
+  const clientes = require("../controllers/cliente.controller.js"); // Aquí se importa correctamente el controlador
   const router = require("express").Router();
 
   // Crear cliente
@@ -24,9 +24,8 @@ module.exports = app => {
   // Historial de ventas de un cliente
   router.get("/:id/ventas", clientes.findVentasByCliente);
 
-
   // Buscar cliente por NIT o Email
-app.post('/api/clientes/find-by-email-or-nit', clienteController.findByEmailOrNIT);
+  router.post('/find-by-email-or-nit', clientes.findByEmailOrNIT); // Aquí cambiamos a `clientes.findByEmailOrNIT`
 
   app.use("/api/clientes", router);
 };
