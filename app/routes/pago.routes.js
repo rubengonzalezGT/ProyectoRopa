@@ -3,7 +3,7 @@ module.exports = app => {
   const router = require("express").Router();
 
   // 🔹 Rutas de pagos
-  router.post("/", pagos.create);          // Crear pago manual (CASH / CARD)
+  router.post("/create", pagos.create);          // Crear pago manual (CASH / CARD)
   router.get("/", pagos.findAll);          // Listar pagos
   router.get("/:id", pagos.findOne);       // Obtener un pago por ID
   router.delete("/:id", pagos.delete);     // Eliminar pago
