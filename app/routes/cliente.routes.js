@@ -24,5 +24,9 @@ module.exports = app => {
   // Historial de ventas de un cliente
   router.get("/:id/ventas", clientes.findVentasByCliente);
 
+
+  // Buscar cliente por NIT o Email
+app.post('/api/clientes/find-by-email-or-nit', clienteController.findByEmailOrNIT);
+
   app.use("/api/clientes", router);
 };

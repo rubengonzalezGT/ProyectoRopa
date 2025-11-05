@@ -21,7 +21,7 @@ const getPagingData = (data, page, limit) => {
   return { totalItems, items: rows, totalPages, currentPage };
 };
 
-/*Crear cliente (con chequeo básico de duplicados por NIT o Email)*/
+// Crear cliente (si no existe) o usar el cliente existente
 exports.create = async (req, res) => {
   try {
     const { nombre, nit, email, telefono, direccion } = req.body;
@@ -30,22 +30,22 @@ exports.create = async (req, res) => {
       return res.status(400).send({ message: "El campo 'nombre' es obligatorio." });
     }
 
-    // Chequeo de duplicados razonable (NIT o email si se envían)
-    if (nit || email) {
-      const exists = await Cliente.findOne({
-        where: {
-          [Op.or]: [
-            nit ? { nit } : null,
-            email ? { email } : null
-          ].filter(Boolean)
-        }
-      });
-      if (exists) {
-        return res.status(409).send({ message: "Ya existe un cliente con ese NIT o Email." });
+    // Verificar si ya existe el cliente por NIT o Email
+    let cliente = await Cliente.findOne({
+      where: {
+        [Op.or]: [
+          nit ? { nit } : null,
+          email ? { email } : null
+        ].filter(Boolean)
       }
+    });
+
+    if (cliente) {
+      return res.status(200).send(cliente); // Devuelve el cliente existente
     }
 
-    const nuevo = await Cliente.create({
+    // Si no existe, crear el nuevo cliente
+    cliente = await Cliente.create({
       nombre: String(nombre).trim(),
       nit: nit ?? null,
       email: email ?? null,
@@ -53,11 +53,12 @@ exports.create = async (req, res) => {
       direccion: direccion ?? null
     });
 
-    res.status(201).send(nuevo);
+    res.status(201).send(cliente);
   } catch (err) {
     res.status(500).send({ message: err.message || "Error al crear el cliente." });
   }
 };
+
 
 /**
  * Listar clientes con búsqueda y paginación
@@ -203,4 +204,29 @@ exports.findVentasByCliente = async (req, res) => {
     });
   }
 };
+
+// Buscar cliente por NIT o Email
+exports.findByEmailOrNIT = async (req, res) => {
+  try {
+    const { email, nit } = req.body;
+
+    const cliente = await Cliente.findOne({
+      where: {
+        [Op.or]: [
+          nit ? { nit } : null,
+          email ? { email } : null
+        ].filter(Boolean)
+      }
+    });
+
+    if (!cliente) {
+      return res.status(404).send({ message: "Cliente no encontrado." });
+    }
+
+    res.send(cliente);
+  } catch (err) {
+    res.status(500).send({ message: err.message || "Error al obtener el cliente." });
+  }
+};
+
 
