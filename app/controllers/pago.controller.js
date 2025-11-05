@@ -1,170 +1,172 @@
 const db = require("../models");
-const Pago = db.pago;
 const Venta = db.venta;
-const paypalClient = require("../config/paypalClient.config.js");
-const checkoutNodeJssdk = require("@paypal/checkout-server-sdk");
+const Cliente = db.cliente;
+const Usuario = db.usuario;
+const VentaItem = db.ventaItem;
+const Variante = db.productoVariante;
+const Producto = db.producto;
 
-// Helper: calcula total pagado y saldo pendiente de una venta
-async function calcularResumenPagos(id_venta) {
-  const pagos = await Pago.findAll({ where: { id_venta } });
-  const totalPagado = pagos.reduce(
-    (s, p) => (p.estado === "PAID" ? s + parseFloat(p.monto) : s),
-    0
-  );
-  const venta = await Venta.findByPk(id_venta);
-  const totalVenta = venta ? parseFloat(venta.total) : 0;
-  const restante = parseFloat((totalVenta - totalPagado).toFixed(2));
-  return { totalPagado, restante, totalVenta };
-}
-
-// ==================== 🔹 PAGOS MANUALES (CASH / CARD) ====================
-
-// Crear pago manual
+// Crear una nueva venta
 exports.create = async (req, res) => {
+  try {
+    const { canal, id_cliente, id_usuario, estado } = req.body;
+
+    if (!canal || !id_cliente || !id_usuario) {
+      return res.status(400).send({ message: "Faltan datos obligatorios (canal, cliente, usuario)." });
+    }
+
+    // Generar número de factura basado en la última venta
+    const ultimaVenta = await Venta.findOne({ order: [["id_venta", "DESC"]] });
+    const nextNumber = ultimaVenta ? ultimaVenta.id_venta + 1 : 1;
+    const numeroFactura = `FAC-${nextNumber.toString().padStart(4, "0")}`;
+
+    // Crear la venta
+    const venta = await Venta.create({
+      canal,
+      id_cliente,
+      id_usuario,
+      estado: estado || "PENDING",  // Estado "PENDING" hasta que se complete el pago
+      numero_factura: numeroFactura,
+      subtotal: 0,  // Inicializa con 0
+      descuento: 0,  // Inicializa con 0
+      impuesto: 0,  // Inicializa con 0
+      total: 0  // Inicializa con 0
+    });
+
+    // Devolver el id_venta al frontend para usarlo en el proceso de pago
+    res.status(201).send({ id_venta: venta.id_venta });
+  } catch (err) {
+    res.status(500).send({ message: err.message || "Error al crear la venta." });
+  }
+};
+
+
+/** Listar todas las ventas */
+exports.findAll = async (_req, res) => {
+  try {
+    const ventas = await Venta.findAll({
+      include: [
+        { model: Cliente, as: "cliente" },
+        { model: Usuario, as: "usuario" },
+        {
+          model: VentaItem,
+          as: "items",
+          include: [
+            {
+              model: Variante,
+              as: "variante",
+              include: [{ model: Producto, as: "producto" }]
+            }
+          ]
+        }
+      ],
+      order: [["id_venta", "DESC"]]
+    });
+    res.send(ventas);
+  } catch (err) {
+    res.status(500).send({ message: err.message || "Error al obtener ventas." });
+  }
+};
+
+/** Obtener una venta por ID */
+exports.findOne = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const venta = await Venta.findByPk(id, {
+      include: [
+        { model: Cliente, as: "cliente" },
+        { model: Usuario, as: "usuario" },
+        {
+          model: VentaItem,
+          as: "items",
+          include: [
+            {
+              model: Variante,
+              as: "variante",
+              include: [{ model: Producto, as: "producto" }]
+            }
+          ]
+        }
+      ]
+    });
+
+    if (!venta) return res.status(404).send({ message: "Venta no encontrada." });
+
+    res.send(venta);
+  } catch (err) {
+    res.status(500).send({ message: "Error al obtener venta con id=" + req.params.id });
+  }
+};
+
+/** Actualizar venta */
+exports.update = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [updated] = await Venta.update(req.body, { where: { id_venta: id } });
+
+    if (updated !== 1) {
+      return res.status(404).send({ message: "Venta no encontrada o sin cambios." });
+    }
+
+    const venta = await Venta.findByPk(id, {
+      include: [
+        { model: Cliente, as: "cliente" },
+        { model: Usuario, as: "usuario" },
+        {
+          model: VentaItem,
+          as: "items",
+          include: [
+            {
+              model: Variante,
+              as: "variante",
+              include: [{ model: Producto, as: "producto" }]
+            }
+          ]
+        }
+      ]
+    });
+
+    res.send(venta);
+  } catch (err) {
+    res.status(500).send({ message: "Error al actualizar venta con id=" + req.params.id });
+  }
+};
+
+/** Eliminar venta */
+exports.delete = async (req, res) => {
   const t = await db.sequelize.transaction();
   try {
-    const { id_venta, metodo, monto, referencia } = req.body;
+    const { id } = req.params;
 
-    if (!id_venta || !metodo || monto == null) {
-      await t.rollback();
-      return res
-        .status(400)
-        .send({ message: "Faltan datos: id_venta, metodo, monto." });
-    }
+    const venta = await Venta.findByPk(id, {
+      include: [{ model: VentaItem, as: "items" }]
+    });
 
-    if (!["CASH", "CARD"].includes(metodo)) {
-      await t.rollback();
-      return res
-        .status(400)
-        .send({ message: "Método inválido. Use 'CASH' o 'CARD'." });
-    }
-
-    const venta = await Venta.findByPk(id_venta);
     if (!venta) {
       await t.rollback();
       return res.status(404).send({ message: "Venta no encontrada." });
     }
 
-    const montoNum = parseFloat(monto);
-    if (isNaN(montoNum) || montoNum <= 0) {
-      await t.rollback();
-      return res.status(400).send({ message: "Monto inválido." });
-    }
-
-    // Validar que no se exceda el saldo
-    const resumen = await calcularResumenPagos(id_venta);
-    if (montoNum > resumen.restante) {
-      await t.rollback();
-      return res.status(400).send({
-        message: "El pago excede el saldo pendiente.",
-        totalVenta: resumen.totalVenta,
-        totalPagado: resumen.totalPagado,
-        restante: resumen.restante,
-      });
-    }
-
-    const pago = await Pago.create(
-      {
-        id_venta,
-        metodo,
-        monto: montoNum,
-        estado: "PAID",
-        proveedor: metodo === "CARD" ? "VISA" : "CAJA",
-        txn_id: referencia || null,
-        paid_at: new Date(),
-      },
-      { transaction: t }
-    );
-
-    await t.commit();
-    const nuevoResumen = await calcularResumenPagos(id_venta);
-
-    res.status(201).send({ pago, resumen: nuevoResumen });
-  } catch (err) {
-    await t.rollback();
-    res.status(500).send({ message: err.message || "Error al crear pago." });
-  }
-};
-
-// ==================== 🔹 PAYPAL ====================
-
-// Crear orden PayPal
-exports.createPaypalOrder = async (req, res) => {
-  try {
-    const { id_venta } = req.body;
-    if (!id_venta) return res.status(400).send({ message: "id_venta es requerido" });
-
-    const venta = await Venta.findByPk(id_venta);
-    if (!venta) return res.status(404).send({ message: "Venta no encontrada" });
-
-    const request = new checkoutNodeJssdk.orders.OrdersCreateRequest();
-    request.prefer("return=representation");
-    request.requestBody({
-      intent: "CAPTURE",
-      purchase_units: [
-        {
-          reference_id: `VENTA-${id_venta}`,
-          amount: {
-            currency_code: "USD",
-            value: venta.total.toString(),  // Total de la venta
-          },
-        },
-      ],
-      application_context: {
-        brand_name: "UMG Tienda Ropa",
-        landing_page: "LOGIN",
-        user_action: "PAY_NOW",
-        return_url: "http://localhost:8081/success",  // Cambiar con tu URL
-        cancel_url: "http://localhost:8081/cancel"   // Cambiar con tu URL
+    // 🔹 Revertir stock por cada item
+    for (const item of venta.items) {
+      const stock = await db.inventarioStock.findByPk(item.id_variante);
+      if (stock) {
+        stock.stock += item.cantidad;
+        stock.updated_at = new Date();
+        await stock.save({ transaction: t });
       }
-    });
+      // eliminar item
+      await VentaItem.destroy({ where: { id_item: item.id_item }, transaction: t });
+    }
 
-    const order = await paypalClient.client().execute(request);
-    res.send({
-      orderID: order.result.id,
-      links: order.result.links,
-    });
-  } catch (err) {
-    res.status(500).send({ message: err.message || "Error creando orden PayPal" });
-  }
-};
-
-// Capturar orden PayPal
-exports.capturePaypalOrder = async (req, res) => {
-  const t = await db.sequelize.transaction();
-  try {
-    const { orderID, id_venta } = req.body;
-
-    const request = new checkoutNodeJssdk.orders.OrdersCaptureRequest(orderID);
-    request.requestBody({});
-    const capture = await paypalClient.client().execute(request);
-
-    const amount = capture.result.purchase_units[0].payments.captures[0].amount.value;
-    const currency = capture.result.purchase_units[0].payments.captures[0].amount.currency_code;
-    const txnId = capture.result.purchase_units[0].payments.captures[0].id;
-
-    // Guardar pago en la base de datos
-    const pago = await Pago.create(
-      {
-        id_venta,
-        metodo: "PAYPAL",
-        monto: amount,
-        moneda: currency,
-        estado: "PAID",
-        proveedor: "PAYPAL",
-        txn_id: txnId,
-        auth_code: txnId.substring(0, 8),
-        card_brand: "PAYPAL",
-        card_last4: "0000",
-        paid_at: new Date(),
-      },
-      { transaction: t }
-    );
+    // 🔹 Eliminar venta
+    await Venta.destroy({ where: { id_venta: id }, transaction: t });
 
     await t.commit();
-    res.status(201).send({ pago, raw: capture.result });
+    res.send({ message: "Venta e items eliminados correctamente, stock revertido." });
   } catch (err) {
     await t.rollback();
-    res.status(500).send({ message: err.message || "Error capturando orden PayPal" });
+    res.status(500).send({ message: err.message || "No se pudo eliminar la venta." });
   }
 };
+
