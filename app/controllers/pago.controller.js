@@ -1,14 +1,10 @@
 const db = require("../models");
 const Pago = db.pago;
 const Venta = db.venta;
-
-// PayPal SDK
 const paypalClient = require("../config/paypalClient.config.js");
 const checkoutNodeJssdk = require("@paypal/checkout-server-sdk");
 
-/**
- *  Helper: calcula total pagado y saldo pendiente de una venta
- */
+// Helper: calcula total pagado y saldo pendiente de una venta
 async function calcularResumenPagos(id_venta) {
   const pagos = await Pago.findAll({ where: { id_venta } });
   const totalPagado = pagos.reduce(
@@ -21,9 +17,9 @@ async function calcularResumenPagos(id_venta) {
   return { totalPagado, restante, totalVenta };
 }
 
-/* ==================== 🔹 PAGOS MANUALES (CASH / CARD) ==================== */
+// ==================== 🔹 PAGOS MANUALES (CASH / CARD) ====================
 
-/* Crear pago manual */
+// Crear pago manual
 exports.create = async (req, res) => {
   const t = await db.sequelize.transaction();
   try {
@@ -90,60 +86,7 @@ exports.create = async (req, res) => {
   }
 };
 
-/** Listar pagos */
-exports.findAll = async (req, res) => {
-  try {
-    const { id_venta } = req.query;
-    const where = id_venta ? { id_venta } : {};
-    const pagos = await Pago.findAll({
-      where,
-      include: [{ model: db.venta, as: "venta" }],
-      order: [["id_pago", "DESC"]],
-    });
-    res.send(pagos);
-  } catch (err) {
-    res.status(500).send({ message: err.message || "Error al obtener pagos." });
-  }
-};
-
-/** Obtener un pago */
-exports.findOne = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const pago = await Pago.findByPk(id, {
-      include: [{ model: db.venta, as: "venta" }],
-    });
-    if (!pago) return res.status(404).send({ message: "Pago no encontrado." });
-    res.send(pago);
-  } catch (err) {
-    res.status(500).send({ message: "Error al obtener pago con id=" + req.params.id });
-  }
-};
-
-/** Eliminar pago */
-exports.delete = async (req, res) => {
-  const t = await db.sequelize.transaction();
-  try {
-    const { id } = req.params;
-    const pago = await Pago.findByPk(id);
-    if (!pago) {
-      await t.rollback();
-      return res.status(404).send({ message: "Pago no encontrado." });
-    }
-
-    const id_venta = pago.id_venta;
-    await Pago.destroy({ where: { id_pago: id }, transaction: t });
-    await t.commit();
-
-    const resumen = await calcularResumenPagos(id_venta);
-    res.send({ message: "Pago eliminado.", resumen });
-  } catch (err) {
-    await t.rollback();
-    res.status(500).send({ message: err.message || "Error al eliminar pago." });
-  }
-};
-
-/* ==================== 🔹 PAYPAL ==================== */
+// ==================== 🔹 PAYPAL ====================
 
 // Crear orden PayPal
 exports.createPaypalOrder = async (req, res) => {
@@ -162,7 +105,7 @@ exports.createPaypalOrder = async (req, res) => {
         {
           reference_id: `VENTA-${id_venta}`,
           amount: {
-            currency_code: "USD", 
+            currency_code: "USD",
             value: venta.total.toString(),  // Total de la venta
           },
         },
@@ -171,8 +114,8 @@ exports.createPaypalOrder = async (req, res) => {
         brand_name: "UMG Tienda Ropa",
         landing_page: "LOGIN",
         user_action: "PAY_NOW",
-        return_url: "http://localhost:8081/success",  // Reemplaza con tu URL
-        cancel_url: "http://localhost:8081/cancel"   // Reemplaza con tu URL
+        return_url: "http://localhost:8081/success",  // Cambiar con tu URL
+        cancel_url: "http://localhost:8081/cancel"   // Cambiar con tu URL
       }
     });
 
@@ -186,9 +129,7 @@ exports.createPaypalOrder = async (req, res) => {
   }
 };
 
-
-
-/** Capturar orden PayPal */
+// Capturar orden PayPal
 exports.capturePaypalOrder = async (req, res) => {
   const t = await db.sequelize.transaction();
   try {
@@ -202,17 +143,17 @@ exports.capturePaypalOrder = async (req, res) => {
     const currency = capture.result.purchase_units[0].payments.captures[0].amount.currency_code;
     const txnId = capture.result.purchase_units[0].payments.captures[0].id;
 
-    // Guardar pago en DB
+    // Guardar pago en la base de datos
     const pago = await Pago.create(
       {
         id_venta,
-        metodo: "PAYPAL", 
+        metodo: "PAYPAL",
         monto: amount,
         moneda: currency,
         estado: "PAID",
         proveedor: "PAYPAL",
         txn_id: txnId,
-        auth_code: txnId.substring(0, 8), 
+        auth_code: txnId.substring(0, 8),
         card_brand: "PAYPAL",
         card_last4: "0000",
         paid_at: new Date(),

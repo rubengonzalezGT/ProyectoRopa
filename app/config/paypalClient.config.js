@@ -1,11 +1,14 @@
 const checkoutNodeJssdk = require("@paypal/checkout-server-sdk");
 
 function environment() {
-  let clientId = process.env.PAYPAL_CLIENT_ID;
-  let clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+  const clientId = process.env.PAYPAL_CLIENT_ID;
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error("PayPal credentials are missing.");
+  }
 
   return new checkoutNodeJssdk.core.SandboxEnvironment(clientId, clientSecret);
-  // ⚠️ en producción cambia a LiveEnvironment
 }
 
 function client() {
