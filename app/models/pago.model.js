@@ -5,7 +5,7 @@ module.exports = (sequelize, Sequelize) => {
             autoIncrement: true, 
             primaryKey: true },
         metodo: { 
-            type: Sequelize.ENUM('CASH','CARD', 'PAYPAL'), 
+            type: Sequelize.ENUM('CASH','CARD', 'PAYPAL', 'STRIPE'), 
             allowNull: false 
         },
         monto: { 
@@ -25,7 +25,17 @@ module.exports = (sequelize, Sequelize) => {
         auth_code: Sequelize.STRING,
         card_brand: Sequelize.STRING,
         card_last4: Sequelize.STRING,
-        paid_at: Sequelize.DATE
+        paid_at: Sequelize.DATE,
+        id_venta: {
+            type: Sequelize.BIGINT,
+            allowNull: false,
+            references: {
+                model: 'venta',
+                key: 'id_venta'
+            },
+            onUpdate: 'CASCADE',
+            onDelete: 'CASCADE'
+        }
     }, { 
         tableName: 'pago',
         freezeTableName: true,

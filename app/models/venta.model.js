@@ -36,6 +36,14 @@ module.exports = (sequelize, Sequelize) => {
         numero_factura: { 
             type: Sequelize.STRING, 
             unique: true 
+        },
+        stripe_payment_intent_id: {
+            type: Sequelize.STRING,
+            allowNull: true
+        },
+        stripe_confirmation_id: {
+            type: Sequelize.STRING,
+            allowNull: true
         }
     }, { 
         tableName: 'venta',
