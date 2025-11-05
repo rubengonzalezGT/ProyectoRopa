@@ -1,172 +1,133 @@
 const db = require("../models");
-const Venta = db.venta;
-const Cliente = db.cliente;
-const Usuario = db.usuario;
-const VentaItem = db.ventaItem;
-const Variante = db.productoVariante;
-const Producto = db.producto;
+const Pago = db.pago;
+const paypalClient = require("../config/paypalClient.config.js");
+const checkoutNodeJssdk = require("@paypal/checkout-server-sdk");
 
-// Crear una nueva venta
+// Crear un nuevo pago (CASH o CARD)
 exports.create = async (req, res) => {
   try {
-    const { canal, id_cliente, id_usuario, estado } = req.body;
+    const { metodo, monto, moneda, estado, proveedor, txn_id, auth_code, card_brand, card_last4 } = req.body;
 
-    if (!canal || !id_cliente || !id_usuario) {
-      return res.status(400).send({ message: "Faltan datos obligatorios (canal, cliente, usuario)." });
+    if (!metodo || !monto) {
+      return res.status(400).send({ message: "Faltan datos obligatorios (metodo, monto)." });
     }
 
-    // Generar número de factura basado en la última venta
-    const ultimaVenta = await Venta.findOne({ order: [["id_venta", "DESC"]] });
-    const nextNumber = ultimaVenta ? ultimaVenta.id_venta + 1 : 1;
-    const numeroFactura = `FAC-${nextNumber.toString().padStart(4, "0")}`;
-
-    // Crear la venta
-    const venta = await Venta.create({
-      canal,
-      id_cliente,
-      id_usuario,
-      estado: estado || "PENDING",  // Estado "PENDING" hasta que se complete el pago
-      numero_factura: numeroFactura,
-      subtotal: 0,  // Inicializa con 0
-      descuento: 0,  // Inicializa con 0
-      impuesto: 0,  // Inicializa con 0
-      total: 0  // Inicializa con 0
+    const pago = await Pago.create({
+      metodo,
+      monto,
+      moneda: moneda || 'GTQ',
+      estado: estado || 'PENDING',
+      proveedor,
+      txn_id,
+      auth_code,
+      card_brand,
+      card_last4,
+      paid_at: estado === 'PAID' ? new Date() : null
     });
 
-    // Devolver el id_venta al frontend para usarlo en el proceso de pago
-    res.status(201).send({ id_venta: venta.id_venta });
+    res.status(201).send(pago);
   } catch (err) {
-    res.status(500).send({ message: err.message || "Error al crear la venta." });
+    res.status(500).send({ message: err.message || "Error al crear el pago." });
   }
 };
 
-
-/** Listar todas las ventas */
+// Listar todos los pagos
 exports.findAll = async (_req, res) => {
   try {
-    const ventas = await Venta.findAll({
-      include: [
-        { model: Cliente, as: "cliente" },
-        { model: Usuario, as: "usuario" },
-        {
-          model: VentaItem,
-          as: "items",
-          include: [
-            {
-              model: Variante,
-              as: "variante",
-              include: [{ model: Producto, as: "producto" }]
-            }
-          ]
-        }
-      ],
-      order: [["id_venta", "DESC"]]
+    const pagos = await Pago.findAll({
+      order: [["id_pago", "DESC"]]
     });
-    res.send(ventas);
+    res.send(pagos);
   } catch (err) {
-    res.status(500).send({ message: err.message || "Error al obtener ventas." });
+    res.status(500).send({ message: err.message || "Error al obtener pagos." });
   }
 };
 
-/** Obtener una venta por ID */
+// Obtener un pago por ID
 exports.findOne = async (req, res) => {
   try {
     const { id } = req.params;
-    const venta = await Venta.findByPk(id, {
-      include: [
-        { model: Cliente, as: "cliente" },
-        { model: Usuario, as: "usuario" },
-        {
-          model: VentaItem,
-          as: "items",
-          include: [
-            {
-              model: Variante,
-              as: "variante",
-              include: [{ model: Producto, as: "producto" }]
-            }
-          ]
-        }
-      ]
-    });
+    const pago = await Pago.findByPk(id);
 
-    if (!venta) return res.status(404).send({ message: "Venta no encontrada." });
+    if (!pago) return res.status(404).send({ message: "Pago no encontrado." });
 
-    res.send(venta);
+    res.send(pago);
   } catch (err) {
-    res.status(500).send({ message: "Error al obtener venta con id=" + req.params.id });
+    res.status(500).send({ message: "Error al obtener pago con id=" + req.params.id });
   }
 };
 
-/** Actualizar venta */
-exports.update = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const [updated] = await Venta.update(req.body, { where: { id_venta: id } });
-
-    if (updated !== 1) {
-      return res.status(404).send({ message: "Venta no encontrada o sin cambios." });
-    }
-
-    const venta = await Venta.findByPk(id, {
-      include: [
-        { model: Cliente, as: "cliente" },
-        { model: Usuario, as: "usuario" },
-        {
-          model: VentaItem,
-          as: "items",
-          include: [
-            {
-              model: Variante,
-              as: "variante",
-              include: [{ model: Producto, as: "producto" }]
-            }
-          ]
-        }
-      ]
-    });
-
-    res.send(venta);
-  } catch (err) {
-    res.status(500).send({ message: "Error al actualizar venta con id=" + req.params.id });
-  }
-};
-
-/** Eliminar venta */
+// Eliminar un pago
 exports.delete = async (req, res) => {
-  const t = await db.sequelize.transaction();
   try {
     const { id } = req.params;
+    const deleted = await Pago.destroy({ where: { id_pago: id } });
 
-    const venta = await Venta.findByPk(id, {
-      include: [{ model: VentaItem, as: "items" }]
-    });
-
-    if (!venta) {
-      await t.rollback();
-      return res.status(404).send({ message: "Venta no encontrada." });
+    if (deleted === 0) {
+      return res.status(404).send({ message: "Pago no encontrado." });
     }
 
-    // 🔹 Revertir stock por cada item
-    for (const item of venta.items) {
-      const stock = await db.inventarioStock.findByPk(item.id_variante);
-      if (stock) {
-        stock.stock += item.cantidad;
-        stock.updated_at = new Date();
-        await stock.save({ transaction: t });
-      }
-      // eliminar item
-      await VentaItem.destroy({ where: { id_item: item.id_item }, transaction: t });
-    }
-
-    // 🔹 Eliminar venta
-    await Venta.destroy({ where: { id_venta: id }, transaction: t });
-
-    await t.commit();
-    res.send({ message: "Venta e items eliminados correctamente, stock revertido." });
+    res.send({ message: "Pago eliminado correctamente." });
   } catch (err) {
-    await t.rollback();
-    res.status(500).send({ message: err.message || "No se pudo eliminar la venta." });
+    res.status(500).send({ message: err.message || "No se pudo eliminar el pago." });
   }
 };
 
+// Crear orden PayPal
+exports.createPaypalOrder = async (req, res) => {
+  try {
+    const { amount, currency = 'USD' } = req.body;
+
+    if (!amount) {
+      return res.status(400).send({ message: "Monto requerido." });
+    }
+
+    const request = new checkoutNodeJssdk.orders.OrdersCreateRequest();
+    request.prefer("return=representation");
+    request.requestBody({
+      intent: 'CAPTURE',
+      purchase_units: [{
+        amount: {
+          currency_code: currency,
+          value: amount
+        }
+      }]
+    });
+
+    const order = await paypalClient.client().execute(request);
+    res.status(201).send({ id: order.result.id });
+  } catch (err) {
+    res.status(500).send({ message: err.message || "Error al crear orden PayPal." });
+  }
+};
+
+// Capturar orden PayPal
+exports.capturePaypalOrder = async (req, res) => {
+  try {
+    const { orderId } = req.body;
+
+    if (!orderId) {
+      return res.status(400).send({ message: "Order ID requerido." });
+    }
+
+    const request = new checkoutNodeJssdk.orders.OrdersCaptureRequest(orderId);
+    request.requestBody({});
+
+    const capture = await paypalClient.client().execute(request);
+
+    // Crear registro de pago en BD
+    const pago = await Pago.create({
+      metodo: 'PAYPAL',
+      monto: capture.result.purchase_units[0].payments.captures[0].amount.value,
+      moneda: capture.result.purchase_units[0].payments.captures[0].amount.currency_code,
+      estado: 'PAID',
+      proveedor: 'PayPal',
+      txn_id: capture.result.id,
+      paid_at: new Date()
+    });
+
+    res.send({ capture: capture.result, pago });
+  } catch (err) {
+    res.status(500).send({ message: err.message || "Error al capturar orden PayPal." });
+  }
+};
