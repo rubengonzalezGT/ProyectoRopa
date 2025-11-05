@@ -145,10 +145,12 @@ exports.delete = async (req, res) => {
 
 /* ==================== 🔹 PAYPAL ==================== */
 
-/** Crear orden PayPal */
+// Crear orden PayPal
 exports.createPaypalOrder = async (req, res) => {
   try {
     const { id_venta } = req.body;
+    if (!id_venta) return res.status(400).send({ message: "id_venta es requerido" });
+
     const venta = await Venta.findByPk(id_venta);
     if (!venta) return res.status(404).send({ message: "Venta no encontrada" });
 
@@ -161,7 +163,7 @@ exports.createPaypalOrder = async (req, res) => {
           reference_id: `VENTA-${id_venta}`,
           amount: {
             currency_code: "USD", 
-            value: venta.total.toString(),
+            value: venta.total.toString(),  // Total de la venta
           },
         },
       ],
@@ -169,8 +171,8 @@ exports.createPaypalOrder = async (req, res) => {
         brand_name: "UMG Tienda Ropa",
         landing_page: "LOGIN",
         user_action: "PAY_NOW",
-        return_url: "http://localhost:8081/success",
-        cancel_url: "http://localhost:8081/cancel"
+        return_url: "http://localhost:8081/success",  // Reemplaza con tu URL
+        cancel_url: "http://localhost:8081/cancel"   // Reemplaza con tu URL
       }
     });
 

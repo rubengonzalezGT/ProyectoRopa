@@ -6,7 +6,7 @@ const VentaItem = db.ventaItem;
 const Variante = db.productoVariante;
 const Producto = db.producto;
 
-/** Crear una nueva venta */
+// Crear una nueva venta
 exports.create = async (req, res) => {
   try {
     const { canal, id_cliente, id_usuario, estado } = req.body;
@@ -15,46 +15,31 @@ exports.create = async (req, res) => {
       return res.status(400).send({ message: "Faltan datos obligatorios (canal, cliente, usuario)." });
     }
 
-    // ✅ Generar número de factura basado en la última venta
+    // Generar número de factura basado en la última venta
     const ultimaVenta = await Venta.findOne({ order: [["id_venta", "DESC"]] });
     const nextNumber = ultimaVenta ? ultimaVenta.id_venta + 1 : 1;
     const numeroFactura = `FAC-${nextNumber.toString().padStart(4, "0")}`;
 
+    // Crear la venta
     const venta = await Venta.create({
       canal,
       id_cliente,
       id_usuario,
-      estado: estado || "COMPLETED",
+      estado: estado || "PENDING",  // Estado "PENDING" hasta que se complete el pago
       numero_factura: numeroFactura,
-      subtotal: 0,
-      descuento: 0,
-      impuesto: 0,
-      total: 0
+      subtotal: 0,  // Inicializa con 0
+      descuento: 0,  // Inicializa con 0
+      impuesto: 0,  // Inicializa con 0
+      total: 0  // Inicializa con 0
     });
 
-    const full = await Venta.findByPk(venta.id_venta, {
-      include: [
-        { model: Cliente, as: "cliente" },
-        { model: Usuario, as: "usuario" },
-        {
-          model: VentaItem,
-          as: "items",
-          include: [
-            {
-              model: Variante,
-              as: "variante",
-              include: [{ model: Producto, as: "producto" }]
-            }
-          ]
-        }
-      ]
-    });
-
-    res.status(201).send(full);
+    // Devolver el id_venta al frontend para usarlo en el proceso de pago
+    res.status(201).send({ id_venta: venta.id_venta });
   } catch (err) {
     res.status(500).send({ message: err.message || "Error al crear la venta." });
   }
 };
+
 
 /** Listar todas las ventas */
 exports.findAll = async (_req, res) => {
