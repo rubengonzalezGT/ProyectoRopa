@@ -9,7 +9,7 @@ module.exports = app => {
   router.delete("/:id", pagos.delete);     // Eliminar pago
 
   // 🔹 Rutas de Stripe
-  router.post("/stripe/create-payment", pagos.createStripePaymentIntent);  // Crear PaymentIntent Stripe
+  router.post("/stripe/create-payment-intent", pagos.createStripePaymentIntent);  // Crear PaymentIntent Stripe
   router.post("/stripe/confirm-payment", pagos.confirmStripePayment);  // Confirmar pago Stripe
 
   app.use("/api/pagos", router);
