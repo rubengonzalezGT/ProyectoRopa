@@ -122,7 +122,7 @@ exports.createStripePaymentIntent = async (req, res) => {
   }
 };
 
-/** Confirmar PaymentIntent Stripe y actualizar venta */
+ /** Confirmar PaymentIntent Stripe y actualizar venta */
 exports.confirmStripePayment = async (req, res) => {
   try {
     const { payment_intent_id } = req.body;
@@ -131,11 +131,11 @@ exports.confirmStripePayment = async (req, res) => {
       return res.status(400).send({ message: "Payment Intent ID requerido." });
     }
 
-    // Confirmar PaymentIntent en Stripe (para server-side confirmation)
-    const paymentIntent = await stripe.paymentIntents.confirm(payment_intent_id);
+    // Recuperar el PaymentIntent de Stripe para verificar status (no confirmar de nuevo)
+    const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
 
     if (paymentIntent.status !== 'succeeded') {
-      return res.status(400).send({ message: "Pago no confirmado exitosamente." });
+      return res.status(400).send({ message: `Pago no completado. Status: ${paymentIntent.status}` });
     }
 
     const amount = paymentIntent.amount / 100; // Convertir de centavos
@@ -151,7 +151,7 @@ exports.confirmStripePayment = async (req, res) => {
     // Actualizar pago a PAID
     await pago.update({
       estado: 'PAID',
-      auth_code: paymentIntent.id, // O usar paymentIntent.charges.data[0].id si hay charge
+      auth_code: paymentIntent.id, // O paymentIntent.charges.data[0]?.id si hay charge
       paid_at: new Date()
     });
 
@@ -170,6 +170,6 @@ exports.confirmStripePayment = async (req, res) => {
     });
   } catch (err) {
     console.error('Error en confirmStripePayment:', err);
-    res.status(500).send({ message: err.message || "Error al confirmar PaymentIntent Stripe." });
+    res.status(500).send({ message: err.message || "Error al verificar PaymentIntent Stripe." });
   }
 };
