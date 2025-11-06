@@ -10,7 +10,8 @@ exports.create = async (req, res) => {
     }
 
     const marca = await Marca.create({
-      nombre: req.body.nombre
+      nombre: req.body.nombre,
+      imagen: req.body.imagen || null
     });
 
     res.status(201).send(marca);
@@ -18,6 +19,35 @@ exports.create = async (req, res) => {
     res.status(500).send({ message: err.message || "Error al crear la marca." });
   }
 };
+
+// Actualizar marca
+exports.update = async (req, res) => {
+  try {
+    const updateData = {
+      nombre: req.body.nombre,
+      imagen: req.body.imagen
+    };
+
+    // Eliminamos los campos undefined o null
+    Object.keys(updateData).forEach(key => 
+      (updateData[key] === undefined || updateData[key] === null) && delete updateData[key]
+    );
+
+    const [updated] = await Marca.update(updateData, { 
+      where: { id_marca: req.params.id } 
+    });
+    
+    if (updated !== 1) return res.status(404).send({ message: "Marca no encontrada o sin cambios." });
+
+    const marca = await Marca.findByPk(req.params.id, {
+      include: [{ model: Producto, as: "productos" }]
+    });
+    res.send(marca);
+  } catch (err) {
+    res.status(500).send({ message: err.message || "Error al actualizar la marca." });
+  }
+};
+
 
 // Listar todas las marcas con sus productos
 exports.findAll = async (_req, res) => {
@@ -44,20 +74,6 @@ exports.findOne = async (req, res) => {
   }
 };
 
-// Actualizar marca
-exports.update = async (req, res) => {
-  try {
-    const [updated] = await Marca.update(req.body, { where: { id_marca: req.params.id } });
-    if (updated !== 1) return res.status(404).send({ message: "Marca no encontrada o sin cambios." });
-
-    const marca = await Marca.findByPk(req.params.id, {
-      include: [{ model: Producto, as: "productos" }]
-    });
-    res.send(marca);
-  } catch (err) {
-    res.status(500).send({ message: err.message || "Error al actualizar la marca." });
-  }
-};
 
 // Eliminar marca
 exports.delete = async (req, res) => {
