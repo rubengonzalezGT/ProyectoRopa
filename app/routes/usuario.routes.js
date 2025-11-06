@@ -14,6 +14,8 @@ module.exports = app => {
 
   // Obtener perfil del usuario autenticado
   router.get("/profile", [auth.verifyToken], usuario.profile);
+  // Alias para /me (para compatibilidad con frontend)
+  router.get("/me", [auth.verifyToken], usuario.profile);
 
   app.use("/api/usuarios", router);
 };
