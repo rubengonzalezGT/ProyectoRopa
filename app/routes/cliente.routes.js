@@ -27,5 +27,8 @@ module.exports = app => {
   // Buscar cliente por NIT o Email
   router.post('/find-by-email-or-nit', clientes.findByEmailOrNIT); // Aquí cambiamos a `clientes.findByEmailOrNIT`
 
+  // Obtener cliente por id_usuario (para integración con auth)
+  router.get('/by-user/:id_usuario', clientes.getByUser);
+
   app.use("/api/clientes", router);
 };

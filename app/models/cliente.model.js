@@ -13,6 +13,15 @@ module.exports = (sequelize, Sequelize) => {
         email: Sequelize.STRING,
         telefono: Sequelize.STRING,
         direccion: Sequelize.STRING,
+        id_usuario: {
+            type: Sequelize.INTEGER,
+            references: {
+                model: 'usuario',
+                key: 'id_usuario'
+            },
+            onUpdate: 'CASCADE',
+            onDelete: 'SET NULL'
+        },
         created_at: { 
             type: Sequelize.DATE, 
             defaultValue: Sequelize.NOW 

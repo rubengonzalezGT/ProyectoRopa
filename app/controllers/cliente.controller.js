@@ -21,16 +21,31 @@ const getPagingData = (data, page, limit) => {
   return { totalItems, items: rows, totalPages, currentPage };
 };
 
-// Crear cliente (si no existe) o usar el cliente existente
+/** Crear cliente (si no existe) o usar el cliente existente, con soporte para id_usuario */
 exports.create = async (req, res) => {
   try {
-    const { nombre, nit, email, telefono, direccion } = req.body;
+    const { nombre, nit, email, telefono, direccion, id_usuario } = req.body;
 
     if (!nombre || String(nombre).trim() === "") {
       return res.status(400).send({ message: "El campo 'nombre' es obligatorio." });
     }
 
-    // Verificar si ya existe el cliente por NIT o Email
+    if (id_usuario) {
+      // Validar que el usuario existe
+      const Usuario = db.usuario;
+      const usuario = await Usuario.findByPk(id_usuario);
+      if (!usuario) {
+        return res.status(404).send({ message: "Usuario no encontrado con id_usuario proporcionado." });
+      }
+
+      // Verificar si ya existe cliente para este usuario
+      let clienteExistente = await Cliente.findOne({ where: { id_usuario } });
+      if (clienteExistente) {
+        return res.status(200).send(clienteExistente); // Devuelve el cliente existente
+      }
+    }
+
+    // Verificar si ya existe el cliente por NIT o Email (si no por id_usuario)
     let cliente = await Cliente.findOne({
       where: {
         [Op.or]: [
@@ -50,7 +65,8 @@ exports.create = async (req, res) => {
       nit: nit ?? null,
       email: email ?? null,
       telefono: telefono ?? null,
-      direccion: direccion ?? null
+      direccion: direccion ?? null,
+      id_usuario: id_usuario ?? null
     });
 
     res.status(201).send(cliente);
@@ -226,6 +242,27 @@ exports.findByEmailOrNIT = async (req, res) => {
     res.send(cliente);
   } catch (err) {
     res.status(500).send({ message: err.message || "Error al obtener el cliente." });
+  }
+};
+
+/** Obtener cliente por id_usuario (para integración con auth) */
+exports.getByUser = async (req, res) => {
+  try {
+    const { id_usuario } = req.params;
+
+    if (!id_usuario) {
+      return res.status(400).send({ message: "id_usuario es requerido." });
+    }
+
+    const cliente = await Cliente.findOne({ where: { id_usuario } });
+
+    if (!cliente) {
+      return res.status(404).send({ message: "Cliente no encontrado para este usuario." });
+    }
+
+    res.send(cliente);
+  } catch (err) {
+    res.status(500).send({ message: err.message || "Error al obtener el cliente por usuario." });
   }
 };
 
