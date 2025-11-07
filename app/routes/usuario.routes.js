@@ -14,6 +14,10 @@ module.exports = app => {
 
   // Obtener perfil del usuario autenticado
   router.get("/profile", [auth.verifyToken], usuario.profile);
+
+  // Actualizar estado de usuario (solo admin)
+  router.put("/:id/estado", [auth.verifyToken, auth.isAdmin], usuario.updateStatus);
+
   // Alias para /me (para compatibilidad con frontend)
   router.get("/me", [auth.verifyToken], usuario.profile);
 

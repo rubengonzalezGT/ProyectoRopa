@@ -80,6 +80,37 @@ exports.login = async (req, res) => {
   }
 };
 
+// Actualizar estado del usuario
+exports.updateStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { estado } = req.body;
+
+    // Validar que el usuario existe
+    const usuario = await Usuario.findByPk(id);
+    if (!usuario) {
+      return res.status(404).send({ 
+        message: "Usuario no encontrado." 
+      });
+    }
+
+    // Actualizar el estado
+    await Usuario.update(
+      { estado }, 
+      { where: { id_usuario: id } }
+    );
+
+    res.send({
+      message: "Estado del usuario actualizado correctamente.",
+      estado
+    });
+  } catch (err) {
+    res.status(500).send({ 
+      message: err.message || "Error al actualizar el estado del usuario." 
+    });
+  }
+};
+
 // Listar usuarios (solo admin)
 exports.findAll = async (_req, res) => {
   try {
