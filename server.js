@@ -17,7 +17,8 @@ const corsOptions = {
     // Lista de orígenes permitidos
     const allowedOrigins = [
       "http://localhost:4200",                // Frontend local
-      "https://proyectoropa-ijsq.onrender.com" // Backend Render
+      "https://proyectoropa-ijsq.onrender.com", // Backend Render
+      "https://neonvibe.onrender.com"         // Frontend Render
     ];
 
     if (allowedOrigins.includes(origin)) {
