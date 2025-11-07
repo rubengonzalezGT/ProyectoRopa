@@ -54,13 +54,17 @@ exports.login = async (req, res) => {
 
     const user = await Usuario.findOne({
       where: { email },
-      include: [{ model: Rol, as: "rol" }] 
+      include: [{ model: Rol, as: "rol" }],
+      attributes: ["id_usuario", "nombre", "email", "password_hash", "estado", "id_rol"] // Añadido estado explícitamente
     });
 
     if (!user) return res.status(401).send({ message: "Credenciales inválidas." });
 
-    // Verificar si la cuenta está activa
-    if (!user.estado) {
+    // Agregar log para debugging
+    console.log('Estado del usuario:', user.estado);
+
+    // Verificar si la cuenta está activa (cambiar la condición)
+    if (user.estado === false) { // Comparación explícita
       return res.status(403).send({ 
         message: "Tu cuenta está desactivada. Por favor, contacta al administrador."
       });
@@ -70,7 +74,12 @@ exports.login = async (req, res) => {
     if (!valid) return res.status(401).send({ message: "Credenciales inválidas." });
 
     const token = jwt.sign(
-      { id: user.id_usuario, email: user.email, rol: user.rol?.nombre_rol },
+      { 
+        id: user.id_usuario, 
+        email: user.email, 
+        rol: user.rol?.nombre_rol,
+        estado: user.estado // Incluir estado en el token
+      },
       authConfig.secret,
       { expiresIn: authConfig.jwtExpiration }
     );
@@ -80,13 +89,14 @@ exports.login = async (req, res) => {
       nombre: user.nombre,
       email: user.email,
       rol: user.rol?.nombre_rol,
+      estado: user.estado, // Incluir estado en la respuesta
       token
     });
   } catch (err) {
+    console.error('Error en login:', err); // Agregar log de error
     res.status(500).send({ message: err.message || "Error al hacer login." });
   }
 };
-
 // Actualizar estado del usuario
 exports.updateStatus = async (req, res) => {
   try {
