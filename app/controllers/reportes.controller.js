@@ -46,7 +46,6 @@ const ventas = await Venta.findAll({
   order: [['fecha_venta', 'ASC']]
 });
 
-// Mapear al contrato mínimo que usa la UI
 const orders = ventas.map(v => ({
   id: v.id_venta,
   createdAt: v.fecha_venta, // ISO
@@ -55,12 +54,12 @@ const orders = ventas.map(v => ({
     id_item: it.id_item,
     modelo: it.variante?.modelo || it.variante?.sku || 'Producto',
     sku: it.variante?.sku || null,
+    talla: it.variante?.talla || null,  // <-- Agregar la talla
     qty: toNum(it.cantidad),
     unitPrice: toNum(it.precio_unit),
     lineTotal: toNum(it.total) || (toNum(it.cantidad) * toNum(it.precio_unit))
   }))
 }));
-
 return res.json({
   date: fecha,
   timezone: tz,
