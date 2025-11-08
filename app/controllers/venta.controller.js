@@ -170,15 +170,16 @@ exports.delete = async (req, res) => {
   }
 };
 
-// Agregar esto junto a tus otros exports en venta.controller.js
 exports.getMovimientos = async (req, res) => {
     try {
         const { fechaInicio, fechaFin } = req.query;
+        
+        console.log('Fechas recibidas:', { fechaInicio, fechaFin });
 
         const movimientos = await Venta.findAll({
             attributes: [
-                'fecha_creacion',
-                ['id_venta', 'id'],
+                'fecha_venta',  // Cambiado a fecha_venta
+                'id_venta',
                 [db.sequelize.col('items.cantidad'), 'cantidad'],
                 [db.sequelize.col('items.precio_unit'), 'precioUnitario'],
                 [db.sequelize.col('items.total'), 'total']
@@ -188,10 +189,12 @@ exports.getMovimientos = async (req, res) => {
                     model: VentaItem,
                     as: 'items',
                     attributes: [],
+                    required: true,
                     include: [{
                         model: Variante,
                         as: 'variante',
                         attributes: [],
+                        required: true,
                         include: [{
                             model: Producto,
                             as: 'producto',
@@ -211,35 +214,45 @@ exports.getMovimientos = async (req, res) => {
                 }
             ],
             where: {
-                fecha_creacion: {
+                fecha_venta: {  // Cambiado a fecha_venta
                     [db.Sequelize.Op.between]: [
                         `${fechaInicio} 00:00:00`,
                         `${fechaFin} 23:59:59`
                     ]
                 }
             },
-            order: [['fecha_creacion', 'DESC']]
+            order: [['fecha_venta', 'DESC']]  // Cambiado a fecha_venta
         });
 
-        const ventasFormateadas = movimientos.map(venta => ({
-            fecha: venta.fecha_creacion,
-            producto: venta.items[0]?.variante?.producto?.nombre || 'Producto no disponible',
-            cantidad: venta.cantidad,
-            precioUnitario: venta.precioUnitario,
-            total: venta.total,
-            cliente: venta.cliente?.nombre || 'Cliente General',
-            vendedor: venta.usuario?.nombre || 'Sistema'
-        }));
+        console.log('Consulta ejecutada. Número de resultados:', movimientos.length);
+
+        const ventasFormateadas = movimientos.map(venta => {
+            console.log('Procesando venta:', venta.id_venta);
+            return {
+                fecha: venta.fecha_venta,  // Cambiado a fecha_venta
+                producto: venta.items?.[0]?.variante?.producto?.nombre || 'Producto no disponible',
+                cantidad: venta.cantidad,
+                precioUnitario: venta.precio_unit,
+                total: venta.total,
+                cliente: venta.cliente?.nombre || 'Cliente General',
+                vendedor: venta.usuario?.nombre || 'Sistema'
+            };
+        });
 
         res.json({
             ventas: ventasFormateadas
         });
 
     } catch (error) {
-        console.error('Error en movimientos de ventas:', error);
+        console.error('Error detallado en movimientos de ventas:', {
+            message: error.message,
+            stack: error.stack,
+            query: error.sql
+        });
         res.status(500).json({
             error: 'Error al obtener los movimientos de ventas',
-            details: error.message
+            details: error.message,
+            sql: error.sql
         });
     }
 };
