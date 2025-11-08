@@ -20,10 +20,26 @@ module.exports = (sequelize, Sequelize) => {
         created_at: { 
             type: Sequelize.DATE, 
             defaultValue: Sequelize.NOW 
+        },
+        stockAntes: {
+            type: Sequelize.INTEGER,
+            allowNull: false,
+            defaultValue: 0
+        },
+        stockDespues: {
+            type: Sequelize.INTEGER,
+            allowNull: false,
+            defaultValue: 0
+        },
+        id_usuario: {
+            type: Sequelize.BIGINT,
+            allowNull: true
         }
     }, { 
         tableName: 'inventario_mov',
         freezeTableName: true,
-        timestamps: false });
+        timestamps: false 
+    });
+
     return InventarioMov;
 };

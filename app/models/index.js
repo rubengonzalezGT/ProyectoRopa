@@ -101,6 +101,16 @@ db.inventarioMov.belongsTo(db.productoVariante, {
   as: "variante" 
 });
 
+// Movimientos de Inventario -> Usuario
+db.usuario.hasMany(db.inventarioMov, { 
+  foreignKey: "id_usuario", 
+  as: "movimientosInventario" 
+});
+db.inventarioMov.belongsTo(db.usuario, { 
+  foreignKey: "id_usuario", 
+  as: "usuario" 
+});
+
 // Compras
 db.proveedor.hasMany(db.compra, { foreignKey: "id_proveedor", as: "compras" });
 db.compra.belongsTo(db.proveedor, { foreignKey: "id_proveedor", as: "proveedor" });

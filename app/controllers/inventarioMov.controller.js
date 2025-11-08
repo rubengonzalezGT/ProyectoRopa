@@ -9,10 +9,37 @@ const Variante = db.productoVariante;
  */
 exports.create = async (req, res) => {
   try {
-    const { id_variante, tipo, cantidad, costo_unit, motivo, ref_tipo, ref_id } = req.body;
+    const { 
+      id_variante, 
+      tipo, 
+      cantidad, 
+      costo_unit, 
+      motivo, 
+      ref_tipo, 
+      ref_id,
+      id_usuario 
+    } = req.body;
 
     if (!id_variante || !tipo || !cantidad) {
       return res.status(400).send({ message: "id_variante, tipo y cantidad son obligatorios." });
+    }
+
+    // Buscar stock actual antes de crear el movimiento
+    let stock = await Stock.findOne({ where: { id_variante } });
+    const stockAntes = stock ? stock.stock : 0;
+
+    if (!stock) {
+      stock = await Stock.create({ id_variante, stock: 0 });
+    }
+
+    // Calcular stock después según el tipo
+    let stockDespues = stockAntes;
+    if (tipo === "IN") {
+      stockDespues = stockAntes + cantidad;
+    } else if (tipo === "OUT") {
+      stockDespues = Math.max(0, stockAntes - cantidad); // evitar negativos
+    } else if (tipo === "ADJUST") {
+      stockDespues = cantidad;
     }
 
     // Crear movimiento
@@ -24,26 +51,14 @@ exports.create = async (req, res) => {
       motivo: motivo || null,
       ref_tipo: ref_tipo || null,
       ref_id: ref_id || null,
-      created_at: new Date()
+      created_at: new Date(),
+      stockAntes,
+      stockDespues,
+      id_usuario
     });
 
-    // Buscar stock actual
-    let stock = await Stock.findOne({ where: { id_variante } });
-
-    if (!stock) {
-      stock = await Stock.create({ id_variante, stock: 0 });
-    }
-
-    // Ajustar stock según el tipo
-    if (tipo === "IN") {
-      stock.stock += cantidad;
-    } else if (tipo === "OUT") {
-      stock.stock -= cantidad;
-      if (stock.stock < 0) stock.stock = 0; // evitar negativos
-    } else if (tipo === "ADJUST") {
-      stock.stock = cantidad; // en ajuste la cantidad es el nuevo stock
-    }
-
+    // Actualizar stock
+    stock.stock = stockDespues;
     await stock.save();
 
     res.status(201).send({ mov, stock });
@@ -53,14 +68,71 @@ exports.create = async (req, res) => {
 };
 
 /** Listar todos los movimientos */
-exports.findAll = async (_req, res) => {
+exports.findAll = async (req, res) => {
   try {
+    const { fechaInicio, fechaFin } = req.query;
+    
+    // Construir el where según los filtros
+    let where = {};
+    if (fechaInicio && fechaFin) {
+      where.created_at = {
+        [db.Sequelize.Op.between]: [
+          new Date(fechaInicio), 
+          new Date(fechaFin + ' 23:59:59')
+        ]
+      };
+    }
+
     const movimientos = await InventarioMov.findAll({
-      include: [{ model: Variante, as: "variante" }],
+      where,
+      include: [
+        { 
+          model: Variante, 
+          as: "variante",
+          include: [
+            {
+              model: db.producto,
+              as: 'producto',
+              attributes: ['nombre']
+            }
+          ]
+        },
+        {
+          model: db.usuario,
+          as: 'usuario',
+          attributes: ['nombre']
+        }
+      ],
       order: [["created_at", "DESC"]]
     });
-    res.send(movimientos);
+
+    // Transformar los datos al formato que espera el frontend
+    const movimientosFormateados = movimientos.map(mov => {
+      const tipoMovimiento = {
+        'IN': 'Entrada',
+        'OUT': 'Salida',
+        'ADJUST': 'Ajuste'
+      };
+
+      return {
+        fecha: mov.created_at,
+        cantidad: mov.tipo === 'OUT' ? -mov.cantidad : mov.cantidad,
+        producto: mov.variante.producto.nombre + ' - ' + mov.variante.talla,
+        usuario: mov.usuario ? mov.usuario.nombre : 'Sistema',
+        tipo: tipoMovimiento[mov.tipo],
+        descripcion: mov.motivo || 'Sin descripción',
+        precioUnitario: mov.costo_unit || 0,
+        stockAntes: mov.stockAntes || 0, // Necesitamos agregar estos campos al modelo
+        stockDespues: mov.stockDespues || 0
+      };
+    });
+
+    res.json({
+      movimientos: movimientosFormateados
+    });
+
   } catch (err) {
+    console.error('Error al obtener movimientos:', err);
     res.status(500).send({ message: err.message || "Error al obtener movimientos." });
   }
 };
