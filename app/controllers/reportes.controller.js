@@ -70,3 +70,99 @@ console.error('ventasDia error:', err);
 return res.status(500).json({ message: 'Error generando reporte de ventas del día' });
 }
 };
+
+exports.ventasPorMes = async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                TO_CHAR(fecha_venta, 'YYYY-MM') as mes,
+                SUM(total) as total_ventas
+            FROM venta
+            WHERE fecha_venta >= NOW() - INTERVAL '12 months'
+            GROUP BY TO_CHAR(fecha_venta, 'YYYY-MM')
+            ORDER BY mes DESC
+            LIMIT 12;
+        `;
+
+        const ventas = await db.sequelize.query(query, {
+            type: QueryTypes.SELECT
+        });
+
+        // Procesar los datos para el formato que espera el frontend
+        const meses = [];
+        const totales = [];
+
+        ventas.reverse().forEach(venta => {
+            const fecha = new Date(venta.mes + '-01');
+            meses.push(fecha.toLocaleString('es-ES', { month: 'long', year: 'numeric' }));
+            totales.push(parseFloat(venta.total_ventas));
+        });
+
+        res.json({
+            meses: meses,
+            ventas: totales
+        });
+
+    } catch (error) {
+        console.error('Error en ventasPorMes:', error);
+        res.status(500).json({
+            message: "Error al obtener las ventas por mes",
+            error: error.message
+        });
+    }
+};
+
+exports.gananciasPorMes = async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                TO_CHAR(v.fecha_venta, 'YYYY-MM') as mes,
+                SUM(vi.total - (vi.cantidad * c.precio_compra)) as ganancias
+            FROM venta v
+            JOIN venta_item vi ON v.id_venta = vi.id_venta
+            JOIN producto_variante pv ON vi.id_variante = pv.id_variante
+            JOIN (
+                SELECT ci.id_variante, 
+                       COALESCE(ci.precio_unit, 0) as precio_compra
+                FROM compra_item ci
+                JOIN compra c ON ci.id_compra = c.id_compra
+                WHERE c.fecha = (
+                    SELECT MAX(c2.fecha)
+                    FROM compra c2
+                    JOIN compra_item ci2 ON c2.id_compra = ci2.id_compra
+                    WHERE ci2.id_variante = ci.id_variante
+                )
+            ) c ON pv.id_variante = c.id_variante
+            WHERE v.fecha_venta >= NOW() - INTERVAL '12 months'
+            GROUP BY TO_CHAR(v.fecha_venta, 'YYYY-MM')
+            ORDER BY mes DESC
+            LIMIT 12;
+        `;
+
+        const ganancias = await db.sequelize.query(query, {
+            type: QueryTypes.SELECT
+        });
+
+        // Procesar los datos para el formato que espera el frontend
+        const meses = [];
+        const totales = [];
+
+        ganancias.reverse().forEach(ganancia => {
+            const fecha = new Date(ganancia.mes + '-01');
+            meses.push(fecha.toLocaleString('es-ES', { month: 'long', year: 'numeric' }));
+            totales.push(parseFloat(ganancia.ganancias));
+        });
+
+        res.json({
+            meses: meses,
+            ganancias: totales
+        });
+
+    } catch (error) {
+        console.error('Error en gananciasPorMes:', error);
+        res.status(500).json({
+            message: "Error al obtener las ganancias por mes",
+            error: error.message
+        });
+    }
+};
