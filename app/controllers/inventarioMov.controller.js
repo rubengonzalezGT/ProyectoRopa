@@ -117,12 +117,12 @@ exports.findAll = async (req, res) => {
       return {
         fecha: mov.created_at,
         cantidad: mov.tipo === 'OUT' ? -mov.cantidad : mov.cantidad,
-        producto: mov.variante.producto.nombre + ' - ' + mov.variante.talla,
+        producto: (mov.variante?.producto?.nombre || 'Sin producto') + ' - ' + (mov.variante?.talla || 'N/A'),
         usuario: mov.usuario ? mov.usuario.nombre : 'Sistema',
-        tipo: tipoMovimiento[mov.tipo],
+        tipo: tipoMovimiento[mov.tipo] || mov.tipo || 'Desconocido',
         descripcion: mov.motivo || 'Sin descripción',
         precioUnitario: mov.costo_unit || 0,
-        stockAntes: mov.stockAntes || 0, // Necesitamos agregar estos campos al modelo
+        stockAntes: mov.stockAntes || 0,
         stockDespues: mov.stockDespues || 0
       };
     });
