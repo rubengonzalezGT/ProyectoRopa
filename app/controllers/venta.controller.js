@@ -176,68 +176,64 @@ exports.getMovimientos = async (req, res) => {
         
         console.log('Fechas recibidas:', { fechaInicio, fechaFin });
 
-        const movimientos = await Venta.findAll({
+        const movimientos = await db.venta.findAll({
             attributes: [
-                'fecha_venta',  // Cambiado a fecha_venta
-                'id_venta',
-                [db.sequelize.col('items.cantidad'), 'cantidad'],
-                [db.sequelize.col('items.precio_unit'), 'precioUnitario'],
-                [db.sequelize.col('items.total'), 'total']
+                'fecha_venta',
+                'id_venta'
             ],
             include: [
                 {
-                    model: VentaItem,
+                    model: db.ventaItem,
                     as: 'items',
-                    attributes: [],
-                    required: true,
+                    attributes: ['cantidad', 'precio_unit', 'subtotal', 'total'],
                     include: [{
-                        model: Variante,
+                        model: db.productoVariante,
                         as: 'variante',
-                        attributes: [],
-                        required: true,
                         include: [{
-                            model: Producto,
+                            model: db.producto,
                             as: 'producto',
                             attributes: ['nombre']
                         }]
                     }]
                 },
                 {
-                    model: Cliente,
+                    model: db.cliente,
                     as: 'cliente',
                     attributes: ['nombre']
                 },
                 {
-                    model: Usuario,
+                    model: db.usuario,
                     as: 'usuario',
                     attributes: ['nombre']
                 }
             ],
             where: {
-                fecha_venta: {  // Cambiado a fecha_venta
+                fecha_venta: {
                     [db.Sequelize.Op.between]: [
                         `${fechaInicio} 00:00:00`,
                         `${fechaFin} 23:59:59`
                     ]
                 }
             },
-            order: [['fecha_venta', 'DESC']]  // Cambiado a fecha_venta
+            order: [['fecha_venta', 'DESC']]
         });
 
-        console.log('Consulta ejecutada. Número de resultados:', movimientos.length);
-
-        const ventasFormateadas = movimientos.map(venta => {
-            console.log('Procesando venta:', venta.id_venta);
-            return {
-                fecha: venta.fecha_venta,  // Cambiado a fecha_venta
-                producto: venta.items?.[0]?.variante?.producto?.nombre || 'Producto no disponible',
-                cantidad: venta.cantidad,
-                precioUnitario: venta.precio_unit,
-                total: venta.total,
+        const ventasFormateadas = movimientos.flatMap(venta => {
+            // Asegurarse de que items sea un array
+            const items = venta.items || [];
+            
+            return items.map(item => ({
+                fecha: venta.fecha_venta,
+                producto: item.variante?.producto?.nombre || 'Producto no disponible',
+                cantidad: Number(item.cantidad),
+                precioUnitario: Number(item.precio_unit),
+                total: Number(item.total),
                 cliente: venta.cliente?.nombre || 'Cliente General',
                 vendedor: venta.usuario?.nombre || 'Sistema'
-            };
+            }));
         });
+
+        console.log('Ventas formateadas:', ventasFormateadas.slice(0, 2)); // Log primeras 2 ventas para debug
 
         res.json({
             ventas: ventasFormateadas
