@@ -21,7 +21,7 @@ module.exports = (sequelize, Sequelize) => {
             type: Sequelize.DATE, 
             defaultValue: Sequelize.NOW 
         },
-        stockAntes: {
+        stockantes: {  // cambiar de stockAntes a stockantes
             type: Sequelize.INTEGER,
             allowNull: false,
             defaultValue: 0
