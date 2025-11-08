@@ -8,6 +8,9 @@ module.exports = app => {
   // Listar ventas
   router.get("/", venta.findAll);
 
+  // Obtener movimientos de ventas
+  router.get("/mov", venta.getMovimientos);
+
   // Buscar venta por ID
   router.get("/:id", venta.findOne);
 

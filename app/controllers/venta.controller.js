@@ -170,3 +170,76 @@ exports.delete = async (req, res) => {
   }
 };
 
+// Agregar esto junto a tus otros exports en venta.controller.js
+exports.getMovimientos = async (req, res) => {
+    try {
+        const { fechaInicio, fechaFin } = req.query;
+
+        const movimientos = await Venta.findAll({
+            attributes: [
+                'fecha_creacion',
+                ['id_venta', 'id'],
+                [db.sequelize.col('items.cantidad'), 'cantidad'],
+                [db.sequelize.col('items.precio_unit'), 'precioUnitario'],
+                [db.sequelize.col('items.total'), 'total']
+            ],
+            include: [
+                {
+                    model: VentaItem,
+                    as: 'items',
+                    attributes: [],
+                    include: [{
+                        model: Variante,
+                        as: 'variante',
+                        attributes: [],
+                        include: [{
+                            model: Producto,
+                            as: 'producto',
+                            attributes: ['nombre']
+                        }]
+                    }]
+                },
+                {
+                    model: Cliente,
+                    as: 'cliente',
+                    attributes: ['nombre']
+                },
+                {
+                    model: Usuario,
+                    as: 'usuario',
+                    attributes: ['nombre']
+                }
+            ],
+            where: {
+                fecha_creacion: {
+                    [db.Sequelize.Op.between]: [
+                        `${fechaInicio} 00:00:00`,
+                        `${fechaFin} 23:59:59`
+                    ]
+                }
+            },
+            order: [['fecha_creacion', 'DESC']]
+        });
+
+        const ventasFormateadas = movimientos.map(venta => ({
+            fecha: venta.fecha_creacion,
+            producto: venta.items[0]?.variante?.producto?.nombre || 'Producto no disponible',
+            cantidad: venta.cantidad,
+            precioUnitario: venta.precioUnitario,
+            total: venta.total,
+            cliente: venta.cliente?.nombre || 'Cliente General',
+            vendedor: venta.usuario?.nombre || 'Sistema'
+        }));
+
+        res.json({
+            ventas: ventasFormateadas
+        });
+
+    } catch (error) {
+        console.error('Error en movimientos de ventas:', error);
+        res.status(500).json({
+            error: 'Error al obtener los movimientos de ventas',
+            details: error.message
+        });
+    }
+};
