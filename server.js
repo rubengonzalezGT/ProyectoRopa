@@ -106,6 +106,8 @@ require("./app/routes/ventaDevolucion.routes")(app);
 require("./app/routes/cliente.routes")(app);
 require("./app/routes/factura.routes")(app);
 require("./app/routes/pago.routes")(app);
+const reportesRoutes = require("./app/routes/reportes.routes");
+app.use('/api/reportes', reportesRoutes);
 
 // Endpoints para redirección de PayPal
 app.get("/success", (req, res) => {
