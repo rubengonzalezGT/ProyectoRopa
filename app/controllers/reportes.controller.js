@@ -1,6 +1,7 @@
 const { DateTime } = require('luxon');
 const { Op } = require('sequelize');
 const db = require('../models');
+const { QueryTypes } = require('sequelize');
 
 const {
 venta: Venta,
