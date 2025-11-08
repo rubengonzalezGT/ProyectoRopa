@@ -26,7 +26,7 @@ module.exports = (sequelize, Sequelize) => {
             allowNull: false,
             defaultValue: 0
         },
-        stockDespues: {
+        stockdespues: {
             type: Sequelize.INTEGER,
             allowNull: false,
             defaultValue: 0
